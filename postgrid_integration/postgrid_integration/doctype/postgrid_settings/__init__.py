@@ -7,6 +7,8 @@ import json
 import pprint
 import jwt
 
+from frappe.www.printview import get_rendered_template
+
 STATUS_MAP = {
     "ready": {
         "status": "Queued",
@@ -116,7 +118,7 @@ def get_postgrid_defaults():
 
 
 @frappe.whitelist()
-def mail_letter(doctype, docname, print_format, parameters=None):
+def mail_letter(doctype, docname, print_format, parameters=None, notification=None):
     if parameters:
         parameters = json.loads(parameters)
         misc = parameters.get("misc")
@@ -126,6 +128,17 @@ def mail_letter(doctype, docname, print_format, parameters=None):
                 parameters["misc"][option] = True
     else:
         parameters = get_postgrid_defaults()
+    if notification:
+        notification_doc = frappe.get_doc("Notification", notification).as_dict()
+        notification_print_format = notification_doc['notification_print_format']
+        # Render the notification template with the document context
+        notification_template = notification_doc['message']
+        context = frappe.get_doc(doctype, docname).as_dict()
+        notification_doc.message = frappe.render_template(notification_template, context)
+        
+        # Render the notification HTML with the specified print format
+        frappe.render_template(letter_head.content, {"doc": doc.as_dict()})
+        
     from_address = frappe.get_doc("Address", parameters.get("from_address"))
     from_country = frappe.get_doc("Country", from_address.get("country"))
     to_address = frappe.get_doc("Address", parameters.get("to_address"))

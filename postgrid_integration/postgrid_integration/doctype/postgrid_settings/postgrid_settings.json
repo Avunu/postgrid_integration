@@ -20,9 +20,8 @@
   "section_break_ujhw",
   "mode",
   "column_break_gfod",
-  "webhooks_secret",
-  "api_options_section",
   "update_addresses",
+  "webhooks_secret",
   "default_options_section",
   "address_placement",
   "column_break_hrhl",
@@ -127,16 +126,12 @@
   {
    "fieldname": "webhooks_secret",
    "fieldtype": "Read Only",
+   "hidden": 1,
    "label": "Webhooks Secret"
   },
   {
    "fieldname": "column_break_gfod",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "api_options_section",
-   "fieldtype": "Section Break",
-   "label": "API Options"
   },
   {
    "default": "0",
@@ -149,7 +144,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-06-13 16:28:56.566031",
+ "modified": "2024-06-14 16:53:33.307291",
  "modified_by": "Administrator",
  "module": "PostGrid Integration",
  "name": "PostGrid Settings",
