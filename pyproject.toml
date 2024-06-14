@@ -3,12 +3,13 @@ name = "postgrid_integration"
 authors = [
     { name = "Avunu LLC", email = "mail@avu.nu"}
 ]
-description = "PostGrid Integration providing direct mail on demand for Frappe Documents"
+description = "PostGrid Integration for Mailing Frappe Documents"
 requires-python = ">=3.10"
 readme = "README.md"
 dynamic = ["version"]
 dependencies = [
-    # "frappe~=15.0.0" # Installed and managed by bench.
+    "postgrid-python",
+    "pyjwt"
 ]
 
 [build-system]

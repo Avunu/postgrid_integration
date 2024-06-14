@@ -1,0 +1,172 @@
+{
+ "actions": [
+  {
+   "action": "postgrid_integration.postgrid_integration.doctype.postgrid_settings.postgrid_settings.reset_webhooks",
+   "action_type": "Server Action",
+   "label": "Reset Webhooks"
+  }
+ ],
+ "allow_rename": 1,
+ "creation": "2024-06-11 13:45:18.869482",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "api_keys_section",
+  "pm_key_test",
+  "webhook_id_test",
+  "column_break_oozg",
+  "pm_key_live",
+  "webhook_id_live",
+  "section_break_ujhw",
+  "mode",
+  "column_break_gfod",
+  "webhooks_secret",
+  "api_options_section",
+  "update_addresses",
+  "default_options_section",
+  "address_placement",
+  "column_break_hrhl",
+  "envelope_type",
+  "section_break_icya",
+  "additional_options_column",
+  "color",
+  "double_sided",
+  "express"
+ ],
+ "fields": [
+  {
+   "fieldname": "mode",
+   "fieldtype": "Select",
+   "label": "Mode",
+   "options": "Test\nLive"
+  },
+  {
+   "fieldname": "pm_key_test",
+   "fieldtype": "Password",
+   "label": "Test API Key"
+  },
+  {
+   "fieldname": "pm_key_live",
+   "fieldtype": "Password",
+   "label": "Live API Key"
+  },
+  {
+   "fieldname": "api_keys_section",
+   "fieldtype": "Section Break",
+   "hide_border": 1,
+   "label": "API"
+  },
+  {
+   "fieldname": "column_break_oozg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "default_options_section",
+   "fieldtype": "Section Break",
+   "hide_border": 1,
+   "label": "Default Options"
+  },
+  {
+   "fieldname": "address_placement",
+   "fieldtype": "Select",
+   "label": "Address Placement",
+   "options": "Insert Blank Page\nTop of First Page"
+  },
+  {
+   "fieldname": "column_break_hrhl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "envelope_type",
+   "fieldtype": "Select",
+   "label": "Envelope Type",
+   "options": "Standard Double Window\nFlat"
+  },
+  {
+   "fieldname": "section_break_icya",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "double_sided",
+   "fieldtype": "Check",
+   "label": "Double Sided"
+  },
+  {
+   "default": "0",
+   "fieldname": "color",
+   "fieldtype": "Check",
+   "label": "Color"
+  },
+  {
+   "default": "0",
+   "fieldname": "express",
+   "fieldtype": "Check",
+   "label": "Express"
+  },
+  {
+   "fieldname": "additional_options_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_ujhw",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "webhook_id_test",
+   "fieldtype": "Read Only",
+   "hidden": 1,
+   "label": "Test Webhook"
+  },
+  {
+   "fieldname": "webhook_id_live",
+   "fieldtype": "Read Only",
+   "hidden": 1,
+   "label": "Live Webhook"
+  },
+  {
+   "fieldname": "webhooks_secret",
+   "fieldtype": "Read Only",
+   "label": "Webhooks Secret"
+  },
+  {
+   "fieldname": "column_break_gfod",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "api_options_section",
+   "fieldtype": "Section Break",
+   "label": "API Options"
+  },
+  {
+   "default": "0",
+   "description": "Update PostGrid validated addresses in Frappe.",
+   "fieldname": "update_addresses",
+   "fieldtype": "Check",
+   "label": "Update Addresses"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2024-06-13 16:28:56.566031",
+ "modified_by": "Administrator",
+ "module": "PostGrid Integration",
+ "name": "PostGrid Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
