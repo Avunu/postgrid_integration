@@ -11,6 +11,10 @@ The PostGrid Direct Mail App is a powerful integration that enables you to send 
 - View letter history and details within Frappe/ERPNext
 - Seamless integration with PostGrid's direct mail service
 
+## Demo
+
+![PostGrid Mailing](https://github.com/Avunu/postgrid_integration/assets/4996285/58ed1243-c0fe-4bef-9280-665d82e2ecf8)
+
 ## Installation
 
 ```
