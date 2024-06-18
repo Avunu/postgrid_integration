@@ -17,14 +17,17 @@ doctype_js = {"Notification": "public/js/notification.js"}
 page_js = {"print": "public/js/print_view.js"}
 scheduler_events = {
     "daily": [
-        "postgrid_integration.postgrid_integration.hooks.notification.trigger_daily_mailed_letter_notifications"
+        "postgrid_integration.postgrid_integration.hooks.notification.trigger_daily_direct_mail_notifications"
     ]
 }
 doc_events = {
     "*": {
-        "after_insert": "postgrid_integration.postgrid_integration.hooks.notification.run_mailed_notifications",
-        "on_update": "postgrid_integration.postgrid_integration.hooks.notification.run_mailed_notifications",
-        "on_submit": "postgrid_integration.postgrid_integration.hooks.notification.run_mailed_notifications",
-        "on_cancel": "postgrid_integration.postgrid_integration.hooks.notification.run_mailed_notifications",
+        "after_insert": "postgrid_integration.postgrid_integration.hooks.notification.run_direct_mail_notifications",
+        "on_update": "postgrid_integration.postgrid_integration.hooks.notification.run_direct_mail_notifications",
+        "on_submit": "postgrid_integration.postgrid_integration.hooks.notification.run_direct_mail_notifications",
+        "on_cancel": "postgrid_integration.postgrid_integration.hooks.notification.run_direct_mail_notifications",
+    },
+    "Notification": {
+        "on_update": "postgrid_integration.postgrid_integration.hooks.notification.set_direct_mail_notification_message",
     }
 }

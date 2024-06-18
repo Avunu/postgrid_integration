@@ -13,14 +13,21 @@ from postgrid_integration.postgrid_integration.doctype.postgrid_settings import 
 from postgrid_integration.config import MAIL_TYPES
 
 
-class MailedNotification(Notification):
+class DirectMailNotification(Notification):
 
     def __init__(self, *args, **kwargs):
-        super(MailedNotification, self).__init__(*args, **kwargs)
+        super(DirectMailNotification, self).__init__(*args, **kwargs)
         self.pg_parameters = {
-            "address_placement": self.address_placement,
-            "envelope_type": self.envelope_type,
-            "with_cover_letter": self.with_cover_letter,
+            "address_placement": (
+                "top_first_page"
+                if self.address_placement == "Top of First Page"
+                else "insert_blank_page"
+            ),
+            "envelope_type": (
+                "standard_double_window"
+                if self.envelope_type == "Standard Double Window"
+                else "flat"
+            ),
             "misc": {
                 "color": self.color,
                 "double_sided": self.double_sided,
@@ -29,7 +36,6 @@ class MailedNotification(Notification):
         }
 
     def send(self, doc):
-        context = get_context(doc)
         if self.channel == "Mailed Letter":
             from_address = self.from_address
             to_address = doc.get(self.to_address_document_field)
@@ -41,29 +47,30 @@ class MailedNotification(Notification):
                 )
                 return
             try:
-
-                if self.with_cover_letter:
-                    mail_letter(
-                        doctype=doc.doctype,
-                        docname=doc.name,
-                        print_format=self.print_format,
-                        from_address=from_address,
-                        to_address=to_address,
-                        to_contact=to_contact,
-                        pg_parameters=self.pg_parameters,
-                        cl_print_format=self.cl_print_format,
-                    )
-                else:
-                    mail_letter(
-                        doc.doctype, doc.name, self.print_format, self.pg_parameters
-                    )
+                mail_letter(
+                    doctype=doc.doctype,
+                    docname=doc.name,
+                    print_format=self.print_format,
+                    from_address=from_address,
+                    to_address=to_address,
+                    to_contact=to_contact,
+                    pg_parameters=self.pg_parameters,
+                    cl_print_format=(
+                        self.cl_print_format if self.with_cover_letter else None
+                    ),
+                )
             except:
                 frappe.log_error(
                     title="Failed to mail notification", message=frappe.get_traceback()
                 )
 
 
-def trigger_daily_mailed_letter_notifications():
+def set_direct_mail_notification_message(doc, method):
+    if doc.get("channel") in MAIL_TYPES and not doc.get("message"):
+        doc.message = "See the attached document."
+
+
+def trigger_daily_direct_mail_notifications():
     if frappe.flags.in_import or frappe.flags.in_patch:
         # don"t send notifications while syncing or patching
         return
@@ -78,14 +85,14 @@ def trigger_daily_mailed_letter_notifications():
         pluck="name",
     )
     for n in notification_list:
-        notification = MailedNotification(n)
+        notification = DirectMailNotification("Notification", n)
 
         for doc in notification.get_documents_for_today():
             evaluate_alert(doc, notification, notification.event)
             frappe.db.commit()
 
 
-def run_mailed_notifications(doc, method):
+def run_direct_mail_notifications(doc, method):
     """Run notifications for any relavant doc methods"""
     if (
         (frappe.flags.in_import and frappe.flags.mute_emails)
@@ -94,10 +101,31 @@ def run_mailed_notifications(doc, method):
     ):
         return
 
-    if doc.flags.mailed_notifications_executed is None:
-        doc.flags.mailed_notifications_executed = []
+    # only run on doctypes with notifications assigned
+    def _get_direct_mail_notification_doctypes():
+        """returns enabled notifications for the current doctype"""
 
-    if doc.flags.mailed_notifications is None:
+        return frappe.get_all(
+            "Notification",
+            fields=["unique(document_type) as document_type"],
+            filters={
+                "enabled": 1,
+                "channel": ["in", MAIL_TYPES],
+            },
+            pluck="document_type",
+        )
+
+    direct_mail_notification_doctypes = frappe.cache.get_value(
+        "direct_mail_notification_doctypes", _get_direct_mail_notification_doctypes
+    )
+
+    if doc.doctype not in direct_mail_notification_doctypes:
+        return
+
+    if doc.flags.direct_mail_notifications_executed is None:
+        doc.flags.direct_mail_notifications_executed = []
+
+    if doc.flags.direct_mail_notifications is None:
 
         def _get_notifications():
             """returns enabled notifications for the current doctype"""
@@ -112,22 +140,22 @@ def run_mailed_notifications(doc, method):
                 },
             )
 
-        doc.flags.mailed_notifications = frappe.cache.hget(
-            "notifications", doc.doctype, _get_notifications
+        doc.flags.direct_mail_notifications = frappe.cache.hget(
+            "direct_mail_notifications", doc.doctype, _get_notifications
         )
 
-    if not doc.flags.mailed_notifications:
+    if not doc.flags.direct_mail_notifications:
         return
 
     def _evaluate_alert(notification):
-        if notification.name in doc.flags.mailed_notifications_executed:
+        if notification.name in doc.flags.direct_mail_notifications_executed:
             return
 
-        notification = MailedNotification(notification.name)
+        notification = DirectMailNotification("Notification", notification.name)
 
-        evaluate_alert(doc, notification.name, notification.event)
+        evaluate_alert(doc, notification, notification.event)
 
-        doc.flags.mailed_notifications_executed.append(notification.name)
+        doc.flags.direct_mail_notifications_executed.append(notification.name)
 
     event_map = {
         "on_update": "Save",
@@ -140,7 +168,7 @@ def run_mailed_notifications(doc, method):
         # value change is not applicable in insert
         event_map["on_change"] = "Value Change"
 
-    for notification in doc.flags.mailed_notifications:
+    for notification in doc.flags.direct_mail_notifications:
         event = event_map.get(method, None)
         if event and notification.event == event:
             _evaluate_alert(notification)
