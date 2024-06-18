@@ -10,6 +10,8 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "section_break_vpnq",
+  "help_text",
   "api_keys_section",
   "pm_key_test",
   "webhook_id_test",
@@ -46,7 +48,6 @@
    "label": "Live API Key"
   },
   {
-   "description": "<a href=\"https://www.postgrid.com/ref/avunu\">Set up your PostGrid account</a> and obtain the API credentials (API key and API secret).",
    "fieldname": "api_keys_section",
    "fieldtype": "Section Break",
    "hide_border": 1,
@@ -127,11 +128,23 @@
    "fieldname": "save_pdf_files",
    "fieldtype": "Check",
    "label": "Save PDF Files"
+  },
+  {
+   "fieldname": "help_text",
+   "fieldtype": "HTML",
+   "label": "Help Text",
+   "options": "<p>PostGrid Integration allows you to send Frappe print-formatted documents as direct mail. To get started,&nbsp;<a href=\"https://www.postgrid.com/ref/avunu\" target=\"_blank\" rel=\"noopener\">set up your PostGrid Print &amp; Mail account&nbsp;\u2197</a> and enter your API credentials here.</p>"
+  },
+  {
+   "depends_on": "eval:!doc.pm_key_live",
+   "fieldname": "section_break_vpnq",
+   "fieldtype": "Section Break",
+   "hide_border": 1
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-06-18 16:55:02.651738",
+ "modified": "2024-06-18 18:33:27.622439",
  "modified_by": "Administrator",
  "module": "PostGrid Integration",
  "name": "PostGrid Settings",

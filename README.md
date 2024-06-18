@@ -25,7 +25,7 @@ bench --site [site-name] install-app postgrid_integration
 ## Configuration
 
 1. [Set up your PostGrid account](https://www.postgrid.com/ref/avunu) and [obtain the API credentials](https://dashboard.postgrid.com/dashboard/settings).
-2. In Frappe/ERPNext, go to the PostGrid Settings.
+2. In Frappe/ERPNext, open the PostGrid Settings.
 3. Enter your PostGrid API credentials in the designated fields.
 4. Customize the PostGrid options to your liking.
 5. Save the configuration.
