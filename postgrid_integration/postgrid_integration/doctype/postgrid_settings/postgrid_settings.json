@@ -19,6 +19,7 @@
   "webhook_id_live",
   "webhooks_secret",
   "update_addresses",
+  "save_pdf_files",
   "default_options_section",
   "address_placement",
   "color",
@@ -45,6 +46,7 @@
    "label": "Live API Key"
   },
   {
+   "description": "<a href=\"https://www.postgrid.com/ref/avunu\">Set up your PostGrid account</a> and obtain the API credentials (API key and API secret).",
    "fieldname": "api_keys_section",
    "fieldtype": "Section Break",
    "hide_border": 1,
@@ -118,11 +120,18 @@
   {
    "fieldname": "column_break_default_options",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Saves the final PostGrid PDF files to Frappe, for reference.",
+   "fieldname": "save_pdf_files",
+   "fieldtype": "Check",
+   "label": "Save PDF Files"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-06-17 10:46:02.475662",
+ "modified": "2024-06-18 16:55:02.651738",
  "modified_by": "Administrator",
  "module": "PostGrid Integration",
  "name": "PostGrid Settings",

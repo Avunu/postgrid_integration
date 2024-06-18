@@ -59,19 +59,26 @@ def webhooks():
             "Communication", com, "delivery_status", status["delivery_status"]
         )
         # if the communication doesn't yet have an attachment, download and attach to the communication
-        pdf_url = data.get("url")
-        pdf_file =  frappe.db.exists("File", {"attached_to_doctype": "Communication", "attached_to_name": com})
-        if not pdf_file:
-            pdf = frappe.get_doc(
-                {
-                    "doctype": "File",
-                    "file_url": pdf_url,
-                    "file_name": f"Letter-{request_id}.pdf",
-                    "attached_to_doctype": "Communication",
-                    "attached_to_name": com,
-                }
+        if settings.save_pdf_files:
+            pdf_url = data.get("url")
+            pdf_file = frappe.db.exists(
+                "File",
+                {"attached_to_doctype": "Communication", "attached_to_name": com},
             )
-            pdf.insert(ignore_permissions=True)
+            if not pdf_file:
+                # download PDF and save it
+                pdf_content = frappe.utils.get_request_session().get(pdf_url).content
+                pdf = frappe.get_doc(
+                    {
+                        "doctype": "File",
+                        "file_name": f"Letter-{request_id}.pdf",
+                        "attached_to_doctype": "Communication",
+                        "attached_to_name": com,
+                        "content": pdf_content,
+                        "is_private": 1,
+                    }
+                )
+                pdf.insert(ignore_permissions=True)
     if settings.update_addresses:
         update_address(data.get("from"))
         update_address(data.get("to"))
@@ -290,11 +297,8 @@ def mail_letter(
         }
 
     # add to timeline
-    message = (
-        f'{doctype} mailed as {print_format} to:<br>'
-        f"{to_address_formatted}"
-    )
-    
+    message = f"{doctype} mailed as {print_format} to:<br>" f"{to_address_formatted}"
+
     communication = frappe.get_doc(
         {
             "comment_type": "Info",
@@ -311,7 +315,7 @@ def mail_letter(
             "sender": frappe.session.user_email,
             "sent_or_received": "Sent",
             "status": "Linked",
-            "subject": "Letter Sent",
+            "subject": f"{docname} Direct Mail",
             "user": frappe.session.user,
         }
     )
@@ -332,6 +336,8 @@ def get_timeline_content(doctype, docname):
             "communication_type": ["in", MAIL_TYPES],
         },
         fields=[
+            "creation",
+            "name",
             "communication_date",
             "communication_type",
             "content",
@@ -344,13 +350,19 @@ def get_timeline_content(doctype, docname):
 
     timeline_contents = []
     for communication in communications:
+        file_url = frappe.db.get_value(
+            "File", {"attached_to_name": communication.name}, "file_url"
+        )
         timeline_contents.append(
             {
                 "icon": "mail",
                 "is_card": True,
                 "creation": communication.communication_date,
                 "template": "direct_mail_timeline",
-                "template_data": communication,
+                "template_data": {
+                    "file_url": file_url,
+                    **communication,
+                },
             }
         )
     return timeline_contents

@@ -105,7 +105,7 @@ frappe.ui.form.PrintView = class PrintView extends frappe.ui.form.PrintView {
                     fieldtype: 'Select',
                     options: [
                         { value: 'insert_blank_page', label: 'Insert Blank Page' },
-                        { value: 'top_first_page ', label: 'Top of First Page' }
+                        { value: 'top_first_page', label: 'Top of First Page' }
                     ],
                     default: postgrid_defaults.address_placement,
                     reqd: 1
@@ -178,7 +178,7 @@ frappe.ui.form.PrintView = class PrintView extends frappe.ui.form.PrintView {
                 from_address: parameters.from_address,
                 to_address: parameters.to_address,
                 to_contact: parameters.to_contact,
-                parameters: parameters,
+                pg_parameters: parameters,
                 cl_print_format: parameters.with_cover_letter ? parameters.cl_print_format : null
             },
             callback: function (r) {

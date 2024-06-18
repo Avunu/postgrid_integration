@@ -18,16 +18,32 @@
 			{% } else if (delivery_status == "Error") { %}
 				{% indicator_color = "red"; %}
 			{% } %}
-			<span class="indicator-pill {%= indicator_color %}-indicator">
+			<span class="indicator-pill {{ indicator_color }}">
 				{%= delivery_status %}
 			</span>
+
+			{% if (file_url) { %}
+			<a class="action-btn" target="_blank" href="{{ file_url }}" title="{{ __('Open PDF Copy') }}">
+				<svg class="es-icon icon-sm">
+					<use href="#es-line-link"></use>
+				</svg>
+			</a>
+			{% } %}
+			<div class="custom-actions"></div>
 			{% if (message_id) { %}
-				<a class="action-btn" href="https://dashboard.postgrid.com/dashboard/letters/{%= message_id %}"
-					title="{{ __('Open in PostGrid') }}">
+			<div class="more-actions">
+				<a type="button" class="action-btn"
+					data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 					<svg class="icon icon-sm">
-						<use href="#icon-link-url" class="open-icon"></use>
+						<use href="#icon-dot-horizontal"></use>
 					</svg>
 				</a>
+				<ul class="dropdown-menu small">
+					<li>
+						<a class="dropdown-item" target="_blank" href="https://dashboard.postgrid.com/dashboard/letters/{%= message_id %}">{{ __('Open in PostGrid') }}</a>
+					</li>
+				</ul>
+			</div>
 			{% } %}
 		</span>
 	</span>
@@ -36,4 +52,4 @@
 	</div>
 </div>`;
 })();
-//# sourceMappingURL=main.bundle.XHFAA5S5.js.map
+//# sourceMappingURL=main.bundle.CCMMIRCC.js.map
