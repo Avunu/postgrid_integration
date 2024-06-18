@@ -9,7 +9,8 @@ readme = "README.md"
 dynamic = ["version"]
 dependencies = [
     "postgrid-python",
-    "pyjwt"
+    "pyjwt",
+    "pypdf"
 ]
 
 [build-system]

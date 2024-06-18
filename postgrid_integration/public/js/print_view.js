@@ -4,6 +4,13 @@ frappe.ui.form.PrintView = class PrintView extends frappe.ui.form.PrintView {
         super.make();
         this.get_postgrid_defaults();
         this.mail_button_added = false;
+        frappe.xcall("frappe.core.doctype.module_def.module_def.get_installed_apps").then((r) => {
+            if (r.includes("erpnext")) {
+                this.erpnext_installed = true;
+            } else {
+                this.erpnext_installed = false;
+            }
+        });
     }
 
     get_postgrid_defaults() {
@@ -34,7 +41,8 @@ frappe.ui.form.PrintView = class PrintView extends frappe.ui.form.PrintView {
         let default_to_address = doc.customer_address || doc.shipping_address || doc.billing_address || doc.supplier_address || doc.address || null;
         let default_to_contact = doc.contact_person || null;
 
-        if (!default_from_address && doc.company) {
+        // if from address is missing and ERPNext is installed, get the default company address
+        if (!default_from_address && doc.company && this.erpnext_installed) {
             frappe.call({
                 method: "erpnext.setup.doctype.company.company.get_default_company_address",
                 args: { name: doc.company, existing_address: doc.company_address || "" },
@@ -103,6 +111,16 @@ frappe.ui.form.PrintView = class PrintView extends frappe.ui.form.PrintView {
                     reqd: 1
                 },
                 {
+                    label: 'Additional Options',
+                    fieldname: 'misc',
+                    fieldtype: 'MultiCheck',
+                    options: [
+                        { value: 'double_sided', label: 'Double Sided', checked: postgrid_defaults.misc.double_sided },
+                        { value: 'color', label: 'Color', checked: postgrid_defaults.misc.color },
+                        { value: 'express', label: 'Express', checked: postgrid_defaults.misc.express },
+                    ],
+                },
+                {
                     fieldname: 'column_break_3',
                     fieldtype: 'Column Break',
                 },
@@ -118,19 +136,24 @@ frappe.ui.form.PrintView = class PrintView extends frappe.ui.form.PrintView {
                     reqd: 1
                 },
                 {
-                    fieldname: 'section_break_4',
-                    fieldtype: 'Section Break',
-                    hide_border: 1
+                    fieldname: 'with_cover_letter',
+                    fieldtype: 'Check',
+                    label: 'With Cover Letter',
                 },
                 {
-                    label: 'Additional Options',
-                    fieldname: 'misc',
-                    fieldtype: 'MultiCheck',
-                    options: [
-                        { value: 'double_sided', label: 'Double Sided', checked: postgrid_defaults.misc.double_sided },
-                        { value: 'color', label: 'Color', checked: postgrid_defaults.misc.color },
-                        { value: 'express', label: 'Express', checked: postgrid_defaults.misc.express },
-                    ],
+                    depends_on: 'with_cover_letter',
+                    fieldname: 'cl_print_format',
+                    fieldtype: 'Link',
+                    label: 'Cover Letter Print Format',
+                    mandatory_depends_on: 'with_cover_letter',
+                    options: 'Print Format',
+                    get_query: function () {
+                        return {
+                            filters: {
+                                doc_type: doc.doctype
+                            }
+                        }
+                    }
                 },
             ],
             size: 'medium',
@@ -152,7 +175,11 @@ frappe.ui.form.PrintView = class PrintView extends frappe.ui.form.PrintView {
                 doctype: doc.doctype,
                 docname: doc.name,
                 print_format: currentPrintFormat,
+                from_address: parameters.from_address,
+                to_address: parameters.to_address,
+                to_contact: parameters.to_contact,
                 parameters: parameters,
+                cl_print_format: parameters.with_cover_letter ? parameters.cl_print_format : null
             },
             callback: function (r) {
                 if (r.message) {

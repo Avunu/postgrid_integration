@@ -6,7 +6,6 @@
    "label": "Reset Webhooks"
   }
  ],
- "allow_rename": 1,
  "creation": "2024-06-11 13:45:18.869482",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -14,23 +13,19 @@
   "api_keys_section",
   "pm_key_test",
   "webhook_id_test",
-  "column_break_oozg",
+  "mode",
+  "column_break_api_keys",
   "pm_key_live",
   "webhook_id_live",
-  "section_break_ujhw",
-  "mode",
-  "column_break_gfod",
-  "update_addresses",
   "webhooks_secret",
+  "update_addresses",
   "default_options_section",
   "address_placement",
-  "column_break_hrhl",
-  "envelope_type",
-  "section_break_icya",
-  "additional_options_column",
   "color",
   "double_sided",
-  "express"
+  "express",
+  "column_break_default_options",
+  "envelope_type"
  ],
  "fields": [
   {
@@ -56,10 +51,6 @@
    "label": "API"
   },
   {
-   "fieldname": "column_break_oozg",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "default_options_section",
    "fieldtype": "Section Break",
    "hide_border": 1,
@@ -72,18 +63,10 @@
    "options": "Insert Blank Page\nTop of First Page"
   },
   {
-   "fieldname": "column_break_hrhl",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "envelope_type",
    "fieldtype": "Select",
    "label": "Envelope Type",
    "options": "Standard Double Window\nFlat"
-  },
-  {
-   "fieldname": "section_break_icya",
-   "fieldtype": "Section Break"
   },
   {
    "default": "0",
@@ -104,14 +87,6 @@
    "label": "Express"
   },
   {
-   "fieldname": "additional_options_column",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "section_break_ujhw",
-   "fieldtype": "Section Break"
-  },
-  {
    "fieldname": "webhook_id_test",
    "fieldtype": "Read Only",
    "hidden": 1,
@@ -130,21 +105,24 @@
    "label": "Webhooks Secret"
   },
   {
-   "fieldname": "column_break_gfod",
-   "fieldtype": "Column Break"
-  },
-  {
    "default": "0",
    "description": "Update PostGrid validated addresses in Frappe.",
    "fieldname": "update_addresses",
    "fieldtype": "Check",
    "label": "Update Addresses"
+  },
+  {
+   "fieldname": "column_break_api_keys",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_default_options",
+   "fieldtype": "Column Break"
   }
  ],
- "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-06-14 16:53:33.307291",
+ "modified": "2024-06-17 10:46:02.475662",
  "modified_by": "Administrator",
  "module": "PostGrid Integration",
  "name": "PostGrid Settings",

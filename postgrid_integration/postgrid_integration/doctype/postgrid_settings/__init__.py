@@ -6,8 +6,7 @@ import io
 import json
 import pprint
 import jwt
-
-from frappe.www.printview import get_rendered_template
+from postgrid_integration.config import MAIL_TYPES
 
 STATUS_MAP = {
     "ready": {
@@ -48,9 +47,6 @@ def webhooks():
     except jwt.InvalidSignatureError:
         raise frappe.AuthenticationError
 
-    # debug
-    frappe.log_error("PostGrid Webhook", json.dumps(data, indent=4))
-
     request_id = data["id"]
     pg_status = data["status"]
     status = STATUS_MAP[pg_status]
@@ -62,6 +58,20 @@ def webhooks():
         frappe.db.set_value(
             "Communication", com, "delivery_status", status["delivery_status"]
         )
+        # if the communication doesn't yet have an attachment, download and attach to the communication
+        pdf_url = data.get("url")
+        pdf_file =  frappe.db.exists("File", {"attached_to_doctype": "Communication", "attached_to_name": com})
+        if not pdf_file:
+            pdf = frappe.get_doc(
+                {
+                    "doctype": "File",
+                    "file_url": pdf_url,
+                    "file_name": f"Letter-{request_id}.pdf",
+                    "attached_to_doctype": "Communication",
+                    "attached_to_name": com,
+                }
+            )
+            pdf.insert(ignore_permissions=True)
     if settings.update_addresses:
         update_address(data.get("from"))
         update_address(data.get("to"))
@@ -118,41 +128,74 @@ def get_postgrid_defaults():
 
 
 @frappe.whitelist()
-def mail_letter(doctype, docname, print_format, parameters=None, notification=None):
-    if parameters:
-        parameters = json.loads(parameters)
-        misc = parameters.get("misc")
+def mail_letter(
+    doctype,
+    docname,
+    print_format,
+    from_address,
+    to_address,
+    to_contact=None,
+    pg_parameters=None,
+    cl_print_format=None,
+):
+    if pg_parameters:
+        if type(pg_parameters) == str:
+            pg_parameters = json.loads(pg_parameters)
+        misc = pg_parameters.get("misc")
         if type(misc) == list:
-            parameters["misc"] = {}
+            pg_parameters["misc"] = {}
             for option in misc:
-                parameters["misc"][option] = True
+                pg_parameters["misc"][option] = True
     else:
-        parameters = get_postgrid_defaults()
-    if notification:
-        notification_doc = frappe.get_doc("Notification", notification).as_dict()
-        notification_print_format = notification_doc['notification_print_format']
-        # Render the notification template with the document context
-        notification_template = notification_doc['message']
-        context = frappe.get_doc(doctype, docname).as_dict()
-        notification_doc.message = frappe.render_template(notification_template, context)
-        
-        # Render the notification HTML with the specified print format
-        frappe.render_template(letter_head.content, {"doc": doc.as_dict()})
-        
-    from_address = frappe.get_doc("Address", parameters.get("from_address"))
+        pg_parameters = get_postgrid_defaults()
+
+    from_address = frappe.get_doc("Address", from_address)
     from_country = frappe.get_doc("Country", from_address.get("country"))
-    to_address = frappe.get_doc("Address", parameters.get("to_address"))
+    to_address = frappe.get_doc("Address", to_address)
     to_contact = {}
-    if parameters.get("to_contact"):
-        to_contact = frappe.get_doc("Contact", parameters.get("to_contact"))
+    if pg_parameters.get("to_contact"):
+        to_contact = frappe.get_doc("Contact", pg_parameters.get("to_contact"))
     to_country_code = frappe.get_value("Country", to_address.get("country"), "code")
-    pdf = frappe.get_print(
-        doctype=doctype,
-        name=docname,
-        print_format=print_format,
-        as_pdf=True,
+    pdf_file = io.BytesIO(
+        frappe.get_print(
+            doctype=doctype,
+            name=docname,
+            print_format=print_format,
+            as_pdf=True,
+        )
     )
-    pdf_file = io.BytesIO(pdf)
+
+    if cl_print_format:
+        cover_letter = io.BytesIO(
+            frappe.get_print(
+                doctype=doctype,
+                name=docname,
+                print_format=cl_print_format,
+                as_pdf=True,
+            )
+        )
+        # insert blank page and merge with PDF
+        from pypdf import PdfReader, PdfWriter
+
+        pdf_reader = PdfReader(pdf_file)
+        cover_letter_reader = PdfReader(cover_letter)
+
+        merged_pdf = PdfWriter()
+        merged_pdf.append_pages_from_reader(cover_letter_reader)
+        if pg_parameters.get("misc", {}).get("double_sided"):
+            merged_pdf.add_blank_page()
+        merged_pdf.append_pages_from_reader(pdf_reader)
+
+        # Create a new BytesIO object to store the merged PDF
+        merged_pdf_file = io.BytesIO()
+        merged_pdf.write(merged_pdf_file)
+
+        # Reset the position of the BytesIO object to the beginning
+        merged_pdf_file.seek(0)
+
+        # Use the merged PDF file instead of the original pdf_file
+        pdf_file = merged_pdf_file
+
     pdf_file.name = f"{doctype}-{docname}.pdf"
     # Send a letter
     client = frappe.get_single("PostGrid Settings").client
@@ -181,12 +224,13 @@ def mail_letter(doctype, docname, print_format, parameters=None, notification=No
         "from_": from_,
         "to": to,
         "pdf": pdf_file,
-        "address_placement": parameters.get("address_placement"),
-        "envelope_type": parameters.get("envelope_type"),
-        **parameters.get("misc"),
+        "address_placement": pg_parameters.get("address_placement"),
+        "envelope_type": pg_parameters.get("envelope_type"),
+        **pg_parameters.get("misc"),
     }
     try:
         letter = client.Letter.create(**request)
+        response = letter.__dict__
         from_obj = getattr(letter, "from")
         from_id = from_obj.id if hasattr(from_obj, "id") else None
         if from_id:
@@ -196,20 +240,20 @@ def mail_letter(doctype, docname, print_format, parameters=None, notification=No
             frappe.db.set_value("Address", to_address.name, "postgrid_id", to_id)
     except Exception as e:
         error = e
+        letter = None
+        response = {"id": "error", "error": frappe.get_traceback()}
 
     # create integration request
-    response = letter.__dict__
-
-    from_address_formatted = "<br>".join(
-        filter(
-            None,
-            [
-                from_["address_line1"],
-                from_["address_line2"],
-                f"{from_['city']} {from_['province_or_state']} {from_['postal_or_zip']}",
-            ],
-        )
-    )
+    # from_address_formatted = "<br>".join(
+    #     filter(
+    #         None,
+    #         [
+    #             from_["address_line1"],
+    #             from_["address_line2"],
+    #             f"{from_['city']} {from_['province_or_state']} {from_['postal_or_zip']}",
+    #         ],
+    #     )
+    # )
     to_address_formatted = "<br>".join(
         filter(
             None,
@@ -233,7 +277,7 @@ def mail_letter(doctype, docname, print_format, parameters=None, notification=No
             "reference_doctype": doctype,
             "reference_docname": docname,
         }
-    ).insert()
+    ).insert(ignore_permissions=True)
 
     if error:
         ig.error = error
@@ -247,18 +291,15 @@ def mail_letter(doctype, docname, print_format, parameters=None, notification=No
 
     # add to timeline
     message = (
-        f'{doctype} mailed as <a href="{letter.uploaded_pdf}" target="_blank">{print_format}</a><br><br>'
-        f"<label>From:</label><br>"
-        f"{from_address_formatted}<br><br>"
-        f"<label>To:</label><br>"
-        f"{to_address_formatted}<br><br>"
-        f'<a href="https://dashboard.postgrid.com/dashboard/letters/{letter.id}" target="_blank">View on PostGrid</a>.'
+        f'{doctype} mailed as {print_format} to:<br>'
+        f"{to_address_formatted}"
     )
+    
     communication = frappe.get_doc(
         {
             "comment_type": "Info",
             "communication_date": frappe.utils.get_datetime_str(letter.send_date),
-            "communication_type": "Automated Message",
+            "communication_type": "Mailed Letter",
             "content": message,
             "delivery_status": "Error" if error else "Scheduled",
             "doctype": "Communication",
@@ -267,16 +308,49 @@ def mail_letter(doctype, docname, print_format, parameters=None, notification=No
             "reference_doctype": doctype,
             "reference_name": docname,
             "sender_full_name": "PostGrid",
-            "sender": frappe.session.user,
+            "sender": frappe.session.user_email,
             "sent_or_received": "Sent",
             "status": "Linked",
             "subject": "Letter Sent",
             "user": frappe.session.user,
         }
     )
-    communication.insert()
+    communication.insert(ignore_permissions=True)
 
     return {
         "message": f"<a href='/app/integration-request/{ig.name}' target='_blank'>Letter sent to PostGrid</a>.",
         "indicator": "green",
     }
+
+
+def get_timeline_content(doctype, docname):
+    communications = frappe.get_all(
+        "Communication",
+        filters={
+            "reference_doctype": doctype,
+            "reference_name": docname,
+            "communication_type": ["in", MAIL_TYPES],
+        },
+        fields=[
+            "communication_date",
+            "communication_type",
+            "content",
+            "delivery_status",
+            "message_id",
+            "recipients",
+        ],
+        order_by="creation desc",
+    )
+
+    timeline_contents = []
+    for communication in communications:
+        timeline_contents.append(
+            {
+                "icon": "mail",
+                "is_card": True,
+                "creation": communication.communication_date,
+                "template": "direct_mail_timeline",
+                "template_data": communication,
+            }
+        )
+    return timeline_contents

@@ -1,0 +1,144 @@
+{
+    "custom_fields": [
+        {
+            "depends_on": "eval:['Mailed Letter','Postcard','Cheque'].includes(doc.channel)",
+            "dt": "Notification",
+            "fieldname": "section_direct_mail",
+            "fieldtype": "Section Break",
+            "hide_border": 1,
+            "insert_after": "slack_webhook_url",
+            "is_system_generated": 1,
+            "label": "Direct Mail Settings",
+            "module": "PostGrid Integration"
+        },
+        {
+            "dt": "Notification",
+            "fieldname": "from_address",
+            "fieldtype": "Link",
+            "label": "From Address",
+            "options": "Address",
+            "insert_after": "section_direct_mail",
+            "module": "PostGrid Integration",
+            "is_system_generated": 1
+        },
+        {
+            "depends_on": "eval:['Mailed Letter','Postcard','Cheque'].includes(doc.channel)",
+            "dt": "Notification",
+            "fieldname": "section_direct_mail_2",
+            "fieldtype": "Section Break",
+            "insert_after": "from_address",
+            "is_system_generated": 1,
+            "module": "PostGrid Integration"
+        },
+        {
+            "dt": "Notification",
+            "fieldname": "to_address_document_field",
+            "fieldtype": "Select",
+            "label": "To Address Field",
+            "insert_after": "section_direct_mail_2",
+            "mandatory_depends_on": "eval:['Mailed Letter','Postcard','Cheque'].includes(doc.channel)",
+            "module": "PostGrid Integration",
+            "is_system_generated": 1
+        },
+        {
+            "dt": "Notification",
+            "fieldname": "address_placement",
+            "fieldtype": "Select",
+            "label": "Address Placement",
+            "options": "Insert Blank Page\nTop of First Page",
+            "insert_after": "to_address_document_field",
+            "module": "PostGrid Integration",
+            "is_system_generated": 1
+        },
+        {
+            "dt": "Notification",
+            "fieldname": "color",
+            "fieldtype": "Check",
+            "label": "Color",
+            "insert_after": "address_placement",
+            "module": "PostGrid Integration",
+            "is_system_generated": 1
+        },
+        {
+            "dt": "Notification",
+            "fieldname": "double_sided",
+            "fieldtype": "Check",
+            "label": "Double Sided",
+            "insert_after": "color",
+            "module": "PostGrid Integration",
+            "is_system_generated": 1
+        },
+        {
+            "dt": "Notification",
+            "fieldname": "express",
+            "fieldtype": "Check",
+            "label": "Express",
+            "insert_after": "double_sided",
+            "module": "PostGrid Integration",
+            "is_system_generated": 1
+        },
+        {
+            "dt": "Notification",
+            "fieldname": "column_break_direct_mail",
+            "fieldtype": "Column Break",
+            "insert_after": "express",
+            "module": "PostGrid Integration",
+            "is_system_generated": 1
+        },
+        {
+            "dt": "Notification",
+            "fieldname": "to_contact_document_field",
+            "fieldtype": "Select",
+            "label": "To Contact Field",
+            "insert_after": "column_break_direct_mail",
+            "module": "PostGrid Integration",
+            "is_system_generated": 1
+        },
+        {
+            "dt": "Notification",
+            "fieldname": "envelope_type",
+            "fieldtype": "Select",
+            "label": "Envelope Type",
+            "options": "Standard Double Window\nFlat",
+            "insert_after": "to_contact_document_field",
+            "mandatory_depends_on": "eval:['Mailed Letter','Postcard','Cheque'].includes(doc.channel)",
+            "module": "PostGrid Integration",
+            "is_system_generated": 1
+        },
+        {
+            "dt": "Notification",
+            "fieldname": "with_cover_letter",
+            "fieldtype": "Check",
+            "label": "With Cover Letter",
+            "insert_after": "envelope_type",
+            "module": "PostGrid Integration",
+            "is_system_generated": 1
+        },
+        {
+            "depends_on": "with_cover_letter",
+            "description": "Print format to be used for the cover letter. If double sided is selected, a blank page will be inserted between the cover letter and the main document.",
+            "dt": "Notification",
+            "fieldname": "cl_print_format",
+            "fieldtype": "Link",
+            "insert_after": "with_cover_letter",
+            "is_system_generated": 1,
+            "label": "Cover Letter Print Format",
+            "mandatory_depends_on": "with_cover_letter",
+            "module": "PostGrid Integration",
+            "options": "Print Format"
+        }
+    ],
+    "property_setters": [
+        {
+			"doc_type": "Notification",
+			"doctype_or_field": "DocField",
+			"field_name": "recipients",
+			"module": "PostGrid Integration",
+			"property_type": "Code",
+			"property": "mandatory_depends_on",
+            "value": "eval:['System Notification','SMS','Email'].includes(doc.channel) && !doc.send_to_all_assignees"
+        }
+    ],
+    "sync_on_migrate": 1,
+    "doctype": "Notification"
+}

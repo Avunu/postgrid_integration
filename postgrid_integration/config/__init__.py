@@ -5,7 +5,7 @@ import frappe
 import json
 
 
-COMMUNICATION_TYPES = [
+MAIL_TYPES = [
     "Mailed Letter",
     # "Postcard" # Uncomment this after Postcard sending is implemented
     # "Cheque" # Uncomment this after Cheque sending is implemented
@@ -21,14 +21,14 @@ def after_uninstall():
     # Remove PostGrid Settings from the Integrations Workspace
     remove_workspace_card_link("Integrations", "Direct Mail", "PostGrid Settings")
     # Remove Communication Types from the Notification and Communication Doctypes
-    revert_field_options("Notification", "channel", COMMUNICATION_TYPES)
-    revert_field_options("Communication", "communication_type", COMMUNICATION_TYPES)
+    revert_field_options("Notification", "channel", MAIL_TYPES)
+    revert_field_options("Communication", "communication_type", MAIL_TYPES)
 
 
 def after_migrate():
     # Add Communication Types from the Notification and Communication Doctypes
-    add_field_options("Notification", "channel", COMMUNICATION_TYPES)
-    add_field_options("Communication", "communication_type", COMMUNICATION_TYPES)
+    add_field_options("Notification", "channel", MAIL_TYPES)
+    add_field_options("Communication", "communication_type", MAIL_TYPES)
 
 
 def add_field_options(doctype, field_name, options_to_add):
