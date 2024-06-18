@@ -3,7 +3,7 @@ name = "postgrid_integration"
 authors = [
     { name = "Avunu LLC", email = "mail@avu.nu"}
 ]
-description = "PostGrid Integration for Mailing Frappe Documents"
+description = "Direct Mail Frappe documents via PostGrid"
 requires-python = ">=3.10"
 readme = "README.md"
 dynamic = ["version"]
