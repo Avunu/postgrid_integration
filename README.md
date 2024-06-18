@@ -23,6 +23,6 @@ bench --site [site-name] install-app postgrid_integration
 1. Set up your PostGrid account and obtain the API credentials (API key and API secret).
 2. In Frappe/ERPNext, go to the PostGrid Direct Mail App settings.
 3. Enter your PostGrid API credentials in the designated fields.
-4. Customize any additional settings, such as default sender information, notification preferences, etc.
+4. Customize the PostGrid options to your liking.
 5. Save the configuration.
 
