@@ -13,10 +13,10 @@ The PostGrid Direct Mail App is a powerful integration that enables you to send 
 
 ## Demo
 
-From the print format of any document, you can send a physical letter to the recipient by clicking the "Mail" button:
+From the print format of any document, you can send a physical letter to any recipient using the added "Mail" option:
 ![PostGrid Mailing](https://github.com/Avunu/postgrid_integration/assets/4996285/58ed1243-c0fe-4bef-9280-665d82e2ecf8)
 
-You can also automate your mailings on doctype events using direct mail notification options:
+You can also automate your mailings on doctype events using Notifications:
 ![PostGrid Notification](https://github.com/Avunu/postgrid_integration/assets/4996285/f6988376-aec3-4731-9ad5-eb249827d389)
 
 ## Installation
