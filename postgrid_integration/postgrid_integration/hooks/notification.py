@@ -65,9 +65,12 @@ class DirectMailNotification(Notification):
                 )
 
 
-def set_direct_mail_notification_message(doc, method):
-    if doc.get("channel") in MAIL_TYPES and not doc.get("message"):
-        doc.message = "See the attached document."
+def direct_mail_notification_update(doc, method):
+    if doc.get("channel") in MAIL_TYPES:
+        if not doc.get("message"):
+            doc.message = "See the attached document."
+        # clear the direct_mail_notification_doctypes cache
+        frappe.cache.delete_value("direct_mail_notification_doctypes")
 
 
 def trigger_daily_direct_mail_notifications():

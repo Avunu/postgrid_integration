@@ -42,15 +42,25 @@ frappe.ui.form.PrintView = class PrintView extends frappe.ui.form.PrintView {
         let default_to_contact = doc.contact_person || null;
 
         // if from address is missing and ERPNext is installed, get the default company address
-        if (!default_from_address && doc.company && this.erpnext_installed) {
-            frappe.call({
-                method: "erpnext.setup.doctype.company.company.get_default_company_address",
-                args: { name: doc.company, existing_address: doc.company_address || "" },
-                debounce: 2000,
-                callback: function (r) {
-                    default_from_address = (r && r.message) || "";
-                },
-            });
+        if (!default_from_address && this.erpnext_installed) {
+            let company;
+            if (doc.company) {
+                company = doc.company;
+            } else if (frappe.defaults.get_user_default("Company")) {
+                company = frappe.defaults.get_user_default("Company");
+            } else {
+                company = frappe.defaults.get_default("Company");
+            }
+            if (company) {
+                frappe.call({
+                    method: "erpnext.setup.doctype.company.company.get_default_company_address",
+                    args: { name: company },
+                    debounce: 2000,
+                    callback: function (r) {
+                        default_from_address = (r && r.message) || "";
+                    },
+                });
+            }
         }
 
         let d = new frappe.ui.Dialog({

@@ -28,6 +28,6 @@ doc_events = {
         "on_cancel": "postgrid_integration.postgrid_integration.hooks.notification.run_direct_mail_notifications",
     },
     "Notification": {
-        "on_update": "postgrid_integration.postgrid_integration.hooks.notification.set_direct_mail_notification_message",
+        "on_update": "postgrid_integration.postgrid_integration.hooks.notification.direct_mail_notification_update",
     }
 }
