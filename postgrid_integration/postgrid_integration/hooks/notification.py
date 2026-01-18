@@ -78,7 +78,7 @@ def trigger_daily_direct_mail_notifications():
         # don"t send notifications while syncing or patching
         return
 
-    notification_list = frappe.get_all(
+    notification_list = frappe.db.get_all(
         "Notification",
         filters={
             "event": ["in", ["Days Before", "Days After"]],
@@ -108,13 +108,13 @@ def run_direct_mail_notifications(doc, method):
     def _get_direct_mail_notification_doctypes():
         """returns enabled notifications for the current doctype"""
 
-        return frappe.get_all(
+        return frappe.db.get_all(
             "Notification",
-            fields=["unique(document_type) as document_type"],
             filters={
                 "enabled": 1,
                 "channel": ["in", MAIL_TYPES],
             },
+            distinct=True,
             pluck="document_type",
         )
 
@@ -133,7 +133,7 @@ def run_direct_mail_notifications(doc, method):
         def _get_notifications():
             """returns enabled notifications for the current doctype"""
 
-            return frappe.get_all(
+            return frappe.db.get_all(
                 "Notification",
                 fields=["name", "event", "method"],
                 filters={
