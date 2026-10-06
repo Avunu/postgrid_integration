@@ -1,0 +1,10 @@
+{
+  "$schema": "./node_modules/@avunu/docusystem/config.schema.json",
+  "name": "PostGrid Integration",
+  "tagline": "Mail printed Frappe and ERPNext documents as physical letters through PostGrid, by hand or automatically from Notifications.",
+  "slug": "postgrid_integration",
+  "platform": "frappe",
+  "repo": "https://github.com/Avunu/postgrid_integration",
+  "domain": "postgrid-direct-mail.avunu.net",
+  "license": "MIT"
+}
