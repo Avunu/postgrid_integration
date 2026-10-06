@@ -9,7 +9,7 @@ app_description = (
 )
 app_email = "mail@avu.nu"
 app_include_js = "main.bundle.js"
-app_license = "mit"
+app_license = "MIT"
 app_name = "postgrid_integration"
 app_publisher = "Avunu LLC"
 app_title = "PostGrid Integration"
