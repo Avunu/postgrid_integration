@@ -6,6 +6,10 @@ authors = [
 description = "Direct Mail Frappe documents via PostGrid"
 requires-python = ">=3.10"
 readme = "README.md"
+license = { text = "MIT" }
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+]
 dynamic = ["version"]
 dependencies = [
     "postgrid-python",
