@@ -32,7 +32,7 @@ bench --site [site-name] install-app postgrid_integration
 2. In Frappe/ERPNext, open the PostGrid Settings.
 3. Enter your PostGrid Test and Live API keys, and choose which Mode (Test or Live) is active.
 4. Set the default options (address placement, envelope type, double sided, color, express), and choose whether to save PDF copies and update addresses from PostGrid's verified results.
-5. Save the configuration. Saving registers a PostGrid webhook for the active mode, so your site must be reachable from the internet for delivery status updates to arrive.
+5. Save the configuration. The first save in each mode registers a PostGrid webhook for that mode, so your site must be reachable from the internet for delivery status updates to arrive.
 
 ## Current limitations
 
