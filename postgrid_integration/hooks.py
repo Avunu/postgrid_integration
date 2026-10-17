@@ -6,6 +6,8 @@ additional_timeline_content = {
 }
 after_install = "postgrid_integration.install.after_install"
 after_migrate = "postgrid_integration.install.after_migrate"
+# frappe syncs custom/*.json after after_install, so a new site's fields are flagged here
+after_sync = "postgrid_integration.install.after_sync"
 app_description = "PostGrid Integration providing direct mail on demand for Frappe Documents"
 app_email = "mail@avu.nu"
 app_include_js = "main.bundle.js"
