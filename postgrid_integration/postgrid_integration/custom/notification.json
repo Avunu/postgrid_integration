@@ -7,7 +7,7 @@
             "fieldtype": "Section Break",
             "hide_border": 1,
             "insert_after": "print_format",
-            "is_system_generated": 1,
+            "is_system_generated": 0,
             "label": "Direct Mail Settings",
             "module": "PostGrid Integration"
         },
@@ -19,7 +19,7 @@
             "options": "Address",
             "insert_after": "section_direct_mail",
             "module": "PostGrid Integration",
-            "is_system_generated": 1
+            "is_system_generated": 0
         },
         {
             "depends_on": "eval:['Mailed Letter','Postcard','Cheque'].includes(doc.channel)",
@@ -27,7 +27,7 @@
             "fieldname": "section_direct_mail_2",
             "fieldtype": "Section Break",
             "insert_after": "from_address",
-            "is_system_generated": 1,
+            "is_system_generated": 0,
             "module": "PostGrid Integration"
         },
         {
@@ -38,7 +38,7 @@
             "insert_after": "section_direct_mail_2",
             "mandatory_depends_on": "eval:['Mailed Letter','Postcard','Cheque'].includes(doc.channel)",
             "module": "PostGrid Integration",
-            "is_system_generated": 1
+            "is_system_generated": 0
         },
         {
             "dt": "Notification",
@@ -48,7 +48,7 @@
             "options": "Insert Blank Page\nTop of First Page",
             "insert_after": "to_address_document_field",
             "module": "PostGrid Integration",
-            "is_system_generated": 1
+            "is_system_generated": 0
         },
         {
             "dt": "Notification",
@@ -57,7 +57,7 @@
             "label": "Color",
             "insert_after": "address_placement",
             "module": "PostGrid Integration",
-            "is_system_generated": 1
+            "is_system_generated": 0
         },
         {
             "dt": "Notification",
@@ -66,7 +66,7 @@
             "label": "Double Sided",
             "insert_after": "color",
             "module": "PostGrid Integration",
-            "is_system_generated": 1
+            "is_system_generated": 0
         },
         {
             "dt": "Notification",
@@ -75,7 +75,7 @@
             "label": "Express",
             "insert_after": "double_sided",
             "module": "PostGrid Integration",
-            "is_system_generated": 1
+            "is_system_generated": 0
         },
         {
             "dt": "Notification",
@@ -83,7 +83,7 @@
             "fieldtype": "Column Break",
             "insert_after": "express",
             "module": "PostGrid Integration",
-            "is_system_generated": 1
+            "is_system_generated": 0
         },
         {
             "dt": "Notification",
@@ -92,7 +92,7 @@
             "label": "To Contact Field",
             "insert_after": "column_break_direct_mail",
             "module": "PostGrid Integration",
-            "is_system_generated": 1
+            "is_system_generated": 0
         },
         {
             "dt": "Notification",
@@ -103,7 +103,7 @@
             "insert_after": "to_contact_document_field",
             "mandatory_depends_on": "eval:['Mailed Letter','Postcard','Cheque'].includes(doc.channel)",
             "module": "PostGrid Integration",
-            "is_system_generated": 1
+            "is_system_generated": 0
         },
         {
             "dt": "Notification",
@@ -112,7 +112,7 @@
             "label": "With Cover Letter",
             "insert_after": "envelope_type",
             "module": "PostGrid Integration",
-            "is_system_generated": 1
+            "is_system_generated": 0
         },
         {
             "depends_on": "with_cover_letter",
@@ -121,7 +121,7 @@
             "fieldname": "cl_print_format",
             "fieldtype": "Link",
             "insert_after": "with_cover_letter",
-            "is_system_generated": 1,
+            "is_system_generated": 0,
             "label": "Cover Letter Print Format",
             "mandatory_depends_on": "with_cover_letter",
             "module": "PostGrid Integration",
