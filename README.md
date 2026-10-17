@@ -1,3 +1,6 @@
+<!-- Copyright (c) 2026, Avunu LLC and contributors
+For license information, please see license.txt-->
+
 # PostGrid Direct Mail App for Frappe/ERPNext
 
 The PostGrid Direct Mail App is a powerful integration that enables you to send physical letters directly from your Frappe/ERPNext system using [PostGrid's Print & Mail API](https://www.postgrid.com/ref/avunu). With this app, you can mail the printed version of a submitted document, such as an invoice, purchase order, or customer statement, to any Frappe Address (optionally addressed to a Contact), such as those of customers, vendors, and employees. Furthermore, you can automate direct mail campaigns using the additional capabilities added to core Notifications.
