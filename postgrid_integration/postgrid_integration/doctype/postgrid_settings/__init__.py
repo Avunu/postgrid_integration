@@ -59,7 +59,9 @@ def update_address(address_data: dict[str, Any] | None) -> None:
 		address.save(ignore_permissions=True)
 
 
-@frappe.whitelist(allow_guest=True)
+# PostGrid calls this webhook without a Frappe session; the body is a JWT signed with webhooks_secret,
+# verified below before anything is read, and an unsigned or unregistered call is refused.
+@frappe.whitelist(allow_guest=True)  # nosemgrep: rules.security.guest-whitelisted-method
 def webhooks() -> int | None:
 	r = frappe.request
 	if not r:
@@ -266,14 +268,13 @@ def mail_letter(
 	#     )
 	# )
 	to_address_formatted = "<br>".join(
-		filter(
-			None,
-			[
-				to["address_line1"],
-				to["address_line2"],
-				f"{to['city']} {to['province_or_state']} {to['postal_or_zip']}",
-			],
+		line
+		for line in (
+			to["address_line1"],
+			to["address_line2"],
+			f"{to['city']} {to['province_or_state']} {to['postal_or_zip']}",
 		)
+		if line
 	)
 	pp = pprint.PrettyPrinter(depth=4)
 	ig = frappe.get_doc(
