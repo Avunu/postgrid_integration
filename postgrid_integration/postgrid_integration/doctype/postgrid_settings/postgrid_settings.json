@@ -32,10 +32,12 @@
  ],
  "fields": [
   {
+   "default": "Test",
    "fieldname": "mode",
    "fieldtype": "Select",
    "label": "Mode",
-   "options": "Test\nLive"
+   "options": "Test\nLive",
+   "reqd": 1
   },
   {
    "fieldname": "pm_key_test",
@@ -144,7 +146,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-06-19 10:06:07.258232",
+ "modified": "2026-10-16 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "PostGrid Integration",
  "name": "PostGrid Settings",
