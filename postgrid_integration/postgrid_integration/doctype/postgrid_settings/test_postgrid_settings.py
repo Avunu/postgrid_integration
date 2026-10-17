@@ -100,6 +100,15 @@ class TestPostGridSettings(IntegrationTestCase):
 			self.assertEqual(reset_webhooks(doc), doc)
 		self.assertEqual(keys, ["test_sk_key", "live_sk_key"])
 
+	def test_reset_webhooks_needs_write_permission(self):
+		set_settings(webhooks_secret=SECRET)
+		doc = json.dumps({"doctype": "PostGrid Settings"})
+		self.addCleanup(frappe.set_user, frappe.session.user)
+		frappe.set_user("Guest")
+		with patch.object(postgrid.Webhook, "create") as create, self.assertRaises(frappe.PermissionError):
+			reset_webhooks(doc)
+		create.assert_not_called()
+
 	def test_get_postgrid_defaults(self):
 		set_settings(
 			address_placement="Top of First Page", envelope_type="Flat", color=1, double_sided=0, express=1

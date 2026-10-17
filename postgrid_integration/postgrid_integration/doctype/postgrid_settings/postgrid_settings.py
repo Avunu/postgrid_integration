@@ -86,7 +86,10 @@ class PostGridSettings(Document):
 
 @frappe.whitelist()
 def reset_webhooks(doc: str | dict[str, Any]) -> str | dict[str, Any]:
+	"""Register a new webhook on the Test and the Live account (the settings form's Reset Webhooks action)."""
 	pgs = frappe.get_single("PostGrid Settings")
+	# Whitelisted: only users who may edit the settings may register webhooks with their API keys
+	pgs.check_permission("write")
 	for mode in ["Test", "Live"]:
 		pgs.mode = mode
 		pgs.initialize_client()
