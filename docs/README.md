@@ -37,6 +37,7 @@ bench --site [site-name] install-app postgrid_integration
 ## Current limitations
 
 - Only letters are supported. Postcards and cheques are not implemented yet.
+- A Mailed Letter notification mails on the New, Save, Submit, Cancel, Days Before and Days After events, and on a Method event for `after_insert`, `on_update`, `on_submit` or `on_cancel`. The Value Change, Minutes Before and Minutes After events don't mail.
 
 ## License
 

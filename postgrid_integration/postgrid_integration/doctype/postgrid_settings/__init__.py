@@ -4,6 +4,7 @@
 import io
 import json
 import pprint
+from typing import Any
 
 import frappe
 import jwt
@@ -34,7 +35,7 @@ STATUS_MAP = {
 }
 
 
-def update_address(address_data):
+def update_address(address_data: dict[str, Any] | None) -> None:
 	if not address_data:
 		return
 	address_id = address_data.get("id")
@@ -54,22 +55,27 @@ def update_address(address_data):
 			}
 		)
 		if address_data.get("companyName"):
-			address.address_title = address_data.get("companyName")
+			address.set("address_title", address_data.get("companyName"))
 		address.save(ignore_permissions=True)
 
 
 @frappe.whitelist(allow_guest=True)
-def webhooks():
+def webhooks() -> int | None:
 	r = frappe.request
 	if not r:
-		return
+		return None
 
 	settings = frappe.get_single("PostGrid Settings")
+	if not settings.webhooks_secret:
+		# No secret means no webhook was ever registered, so nothing can be trusted
+		raise frappe.AuthenticationError
 
 	try:
-		data = jwt.decode(r.get_data(), settings.webhooks_secret, algorithms=["HS256"]).get("data")
-	except jwt.InvalidSignatureError:
+		payload = jwt.decode(r.get_data(), settings.webhooks_secret, algorithms=["HS256"])
+	except jwt.PyJWTError:
 		raise frappe.AuthenticationError from None
+
+	data: dict[str, Any] = payload["data"]
 
 	request_id = data["id"]
 	pg_status = data["status"]
@@ -109,9 +115,9 @@ def webhooks():
 
 
 @frappe.whitelist()
-def get_postgrid_defaults():
+def get_postgrid_defaults() -> dict[str, Any]:
 	settings = frappe.get_single("PostGrid Settings")
-	default_options = {}
+	default_options: dict[str, Any] = {}
 	match settings.address_placement:
 		case "Insert Blank Page":
 			default_options["address_placement"] = "insert_blank_page"
@@ -134,33 +140,33 @@ def get_postgrid_defaults():
 
 @frappe.whitelist()
 def mail_letter(
-	doctype,
-	docname,
-	print_format,
-	from_address,
-	to_address,
-	to_contact=None,
-	pg_parameters=None,
-	cl_print_format=None,
-):
+	doctype: str,
+	docname: str | int,
+	print_format: str | None,
+	from_address: str,
+	to_address: str,
+	to_contact: str | None = None,
+	pg_parameters: str | dict[str, Any] | None = None,
+	cl_print_format: str | None = None,
+) -> dict[str, str]:
+	params: dict[str, Any]
 	if pg_parameters:
-		if type(pg_parameters) is str:
-			pg_parameters = json.loads(pg_parameters)
-		misc = pg_parameters.get("misc")
+		params = json.loads(pg_parameters) if isinstance(pg_parameters, str) else pg_parameters
+		misc = params.get("misc")
 		if type(misc) is list:
-			pg_parameters["misc"] = {}
-			for option in misc:
-				pg_parameters["misc"][option] = True
+			# The print view's MultiCheck sends the ticked options as a list
+			params["misc"] = dict.fromkeys(misc, True)
 	else:
-		pg_parameters = get_postgrid_defaults()
+		params = get_postgrid_defaults()
 
-	from_address = frappe.get_doc("Address", from_address)
-	from_country = frappe.get_doc("Country", from_address.get("country"))
-	to_address = frappe.get_doc("Address", to_address)
-	to_contact = {}
-	if pg_parameters.get("to_contact"):
-		to_contact = frappe.get_doc("Contact", pg_parameters.get("to_contact"))
-	to_country_code = frappe.get_value("Country", to_address.get("country"), "code")
+	from_address_doc = frappe.get_doc("Address", from_address)
+	from_country = frappe.get_doc("Country", from_address_doc.get("country"))
+	to_address_doc = frappe.get_doc("Address", to_address)
+	# The contact comes from the print view's dialog, in pg_parameters
+	to_contact_doc: Any = {}
+	if params.get("to_contact"):
+		to_contact_doc = frappe.get_doc("Contact", params["to_contact"])
+	to_country_code = frappe.get_value("Country", to_address_doc.get("country"), "code")
 	pdf_file = io.BytesIO(
 		frappe.get_print(
 			doctype=doctype,
@@ -187,7 +193,7 @@ def mail_letter(
 
 		merged_pdf = PdfWriter()
 		merged_pdf.append_pages_from_reader(cover_letter_reader)
-		if pg_parameters.get("misc", {}).get("double_sided"):
+		if params.get("misc", {}).get("double_sided"):
 			merged_pdf.add_blank_page()
 		merged_pdf.append_pages_from_reader(pdf_reader)
 
@@ -203,35 +209,35 @@ def mail_letter(
 
 	pdf_file.name = f"{doctype}-{docname}.pdf"
 	# Send a letter
-	client = frappe.get_single("PostGrid Settings").client
+	client = frappe.get_single("PostGrid Settings").initialize_client()
 	error = None
 	from_ = {
-		"company_name": from_address.get("address_title"),
-		"address_line1": from_address.get("address_line1"),
-		"address_line2": from_address.get("address_line2"),
-		"city": from_address.get("city"),
-		"province_or_state": from_address.get("state"),
-		"postal_or_zip": from_address.get("pincode"),
+		"company_name": from_address_doc.get("address_title"),
+		"address_line1": from_address_doc.get("address_line1"),
+		"address_line2": from_address_doc.get("address_line2"),
+		"city": from_address_doc.get("city"),
+		"province_or_state": from_address_doc.get("state"),
+		"postal_or_zip": from_address_doc.get("pincode"),
 		"country_code": from_country.get("code"),
 	}
 	to = {
-		"company_name": to_address.get("address_title"),
-		"first_name": to_contact.get("first_name"),
-		"last_name": to_contact.get("last_name"),
-		"address_line1": to_address.get("address_line1"),
-		"address_line2": to_address.get("address_line2"),
-		"city": to_address.get("city"),
-		"province_or_state": to_address.get("state"),
-		"postal_or_zip": to_address.get("pincode"),
+		"company_name": to_address_doc.get("address_title"),
+		"first_name": to_contact_doc.get("first_name"),
+		"last_name": to_contact_doc.get("last_name"),
+		"address_line1": to_address_doc.get("address_line1"),
+		"address_line2": to_address_doc.get("address_line2"),
+		"city": to_address_doc.get("city"),
+		"province_or_state": to_address_doc.get("state"),
+		"postal_or_zip": to_address_doc.get("pincode"),
 		"country_code": to_country_code,
 	}
 	request = {
 		"from_": from_,
 		"to": to,
 		"pdf": pdf_file,
-		"address_placement": pg_parameters.get("address_placement"),
-		"envelope_type": pg_parameters.get("envelope_type"),
-		**pg_parameters.get("misc"),
+		"address_placement": params.get("address_placement"),
+		"envelope_type": params.get("envelope_type"),
+		**params.get("misc", {}),
 	}
 	try:
 		letter = client.Letter.create(**request)
@@ -239,10 +245,10 @@ def mail_letter(
 		from_obj = getattr(letter, "from")
 		from_id = from_obj.id if hasattr(from_obj, "id") else None
 		if from_id:
-			frappe.db.set_value("Address", from_address.name, "postgrid_id", from_id)
+			frappe.db.set_value("Address", from_address_doc.name, "postgrid_id", from_id)
 		to_id = letter.to.id if hasattr(letter.to, "id") else None
 		if to_id:
-			frappe.db.set_value("Address", to_address.name, "postgrid_id", to_id)
+			frappe.db.set_value("Address", to_address_doc.name, "postgrid_id", to_id)
 	except Exception as e:
 		error = e
 		letter = None
@@ -284,9 +290,9 @@ def mail_letter(
 		}
 	).insert(ignore_permissions=True)
 
-	if error:
-		ig.error = error
-		ig.status = "Failed"
+	if error is not None or letter is None:
+		ig.set("error", str(error))
+		ig.set("status", "Failed")
 		ig.save()
 		frappe.log_error("PostGrid Error", error)
 		return {
@@ -303,10 +309,10 @@ def mail_letter(
 			"communication_date": frappe.utils.get_datetime_str(letter.send_date),
 			"communication_type": "Mailed Letter",
 			"content": message,
-			"delivery_status": "Error" if error else "Scheduled",
+			"delivery_status": "Scheduled",
 			"doctype": "Communication",
 			"message_id": response.get("id"),
-			"recipients": to_address.get("address_title"),
+			"recipients": to_address_doc.get("address_title"),
 			"reference_doctype": doctype,
 			"reference_name": docname,
 			"sender_full_name": "PostGrid",

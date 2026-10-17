@@ -1527,9 +1527,9 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "postgrid-python" },
-    { name = "pyjwt" },
-    { name = "pypdf" },
+    { name = "postgrid-python", specifier = ">=1.0.14,<2" },
+    { name = "pyjwt", specifier = ">=2.10,<3" },
+    { name = "pypdf", specifier = ">=6.0,<7" },
 ]
 
 [[package]]
@@ -1569,19 +1569,15 @@ dev = [
 
 [[package]]
 name = "postgrid-python"
-version = "2.3.0"
+version = "1.0.14"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "anyio" },
-    { name = "distro" },
-    { name = "httpx" },
-    { name = "pydantic" },
-    { name = "sniffio" },
-    { name = "typing-extensions" },
+    { name = "pyjwt" },
+    { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/62/2b/a35cedb27b41fef736226efd7eec761145834974b008a6b18512f1b6f417/postgrid_python-2.3.0.tar.gz", hash = "sha256:d6991c89d562469644353e87ce1ba3993773fa7682c654778f8add7bbd3dabb6", size = 274839, upload-time = "2026-06-15T22:45:33.647Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ad/5a/d8cda1450c39fa8b6f58a82d615db83b17c25804be26595a288d265e8520/postgrid-python-1.0.14.tar.gz", hash = "sha256:f4c21534e60f57c12e336f8ba9a60fe81e4b826caf1eb9a63fbc452429053328", size = 6052, upload-time = "2023-01-29T23:35:24.988Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/42/fc/e9b1df7f1be29c79b5c1cb10cc56fcbd470c59d5f9cab0640b7fe5b360aa/postgrid_python-2.3.0-py3-none-any.whl", hash = "sha256:bfc77b483da34155a1aa0b74ae06a1af800b3791d010991220cdecad7c6c6471", size = 393143, upload-time = "2026-06-15T22:45:32.471Z" },
+    { url = "https://files.pythonhosted.org/packages/43/e3/bf3492263c5c907d887381e9b1701b2f5d211535f3dd2e99b9cd27285ef5/postgrid_python-1.0.14-py3-none-any.whl", hash = "sha256:59acb4532f8ebcbf3ba5f08bf20377d89037fbcc8b4a14c2f29acb762086f698", size = 6284, upload-time = "2023-01-29T23:35:22.877Z" },
 ]
 
 [[package]]
@@ -2168,15 +2164,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/1f/ea/49c993d6dfdd7338c9b1000a0f36817ed7ec84577ae2e52f890d1a4ff909/smmap-5.0.3.tar.gz", hash = "sha256:4d9debb8b99007ae47165abc08670bd74cb74b5227dda7f643eccc4e9eb5642c", size = 22506, upload-time = "2026-03-09T03:43:26.1Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c1/d4/59e74daffcb57a07668852eeeb6035af9f32cbfd7a1d2511f17d2fe6a738/smmap-5.0.3-py3-none-any.whl", hash = "sha256:c106e05d5a61449cf6ba9a1e650227ecfb141590d2a98412103ff35d89fc7b2f", size = 24390, upload-time = "2026-03-09T03:43:24.361Z" },
-]
-
-[[package]]
-name = "sniffio"
-version = "1.3.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/a2/87/a6771e1546d97e7e041b6ae58d80074f81b7d5121207425c964ddf5cfdbd/sniffio-1.3.1.tar.gz", hash = "sha256:f4324edc670a0f49750a81b895f35c3adb843cca46f0530f79fc1babb23789dc", size = 20372, upload-time = "2024-02-25T23:20:04.057Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/e9/44/75a9c9421471a6c4805dbf2356f7c181a29c1879239abab1ea2cc8f38b40/sniffio-1.3.1-py3-none-any.whl", hash = "sha256:2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2", size = 10235, upload-time = "2024-02-25T23:20:01.196Z" },
 ]
 
 [[package]]

@@ -1,28 +1,61 @@
 # Copyright (c) 2024, Avunu LLC and contributors
 # For license information, please see license.txt
 
+from types import ModuleType
+from typing import TYPE_CHECKING, Any
+
 import frappe
 import postgrid
 from frappe.model.document import Document
 
+if TYPE_CHECKING:
+	from frappe.types import DF
+
 
 class PostGridSettings(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	if TYPE_CHECKING:
+		address_placement: DF.Literal["Insert Blank Page", "Top of First Page"]
+		color: DF.Check
+		double_sided: DF.Check
+		envelope_type: DF.Literal["Standard Double Window", "Flat"]
+		express: DF.Check
+		mode: DF.Literal["Test", "Live"]
+		pm_key_live: DF.Password | None
+		pm_key_test: DF.Password | None
+		save_pdf_files: DF.Check
+		update_addresses: DF.Check
+		webhook_id_live: DF.ReadOnly | None
+		webhook_id_test: DF.ReadOnly | None
+		webhooks_secret: DF.ReadOnly | None
+	# end: auto-generated types
+
+	client: ModuleType
+	webhook_url: str
+
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.webhook_url = frappe.utils.get_url(
 			"/api/method/postgrid_integration.postgrid_integration.doctype.postgrid_settings.webhooks"
 		)
-		self.initialize_client()
 
-	def initialize_client(self):
-		pm_key = self.get_password(f"pm_key_{self.mode.lower()}")
-		if self.get("client"):
-			self.client.pm_key = pm_key
-		else:
-			postgrid.pm_key = pm_key
-			self.client = postgrid
+	def initialize_client(self) -> ModuleType:
+		"""Point the PostGrid client at the current mode's API key, and return it.
+
+		Called when the client is needed, not on load: loading the settings (the print view does, for
+		its defaults) then needs no key, and installing the app on a new site, where no mode is set yet,
+		works.
+		"""
+		postgrid.pm_key = self.get_password(f"pm_key_{self.mode.lower()}")
+		self.client = postgrid
+		return postgrid
 
 	def validate(self):
+		if not self.get("mode"):
+			# frappe's mandatory check, which runs after validate, reports it
+			return
 		self.initialize_client()
 		if not self.webhooks_secret:
 			self.generate_webhooks_secret()
@@ -52,8 +85,11 @@ class PostGridSettings(Document):
 
 
 @frappe.whitelist()
-def reset_webhooks(doc):
+def reset_webhooks(doc: str | dict[str, Any]) -> str | dict[str, Any]:
+	"""Register a new webhook on the Test and the Live account (the settings form's Reset Webhooks action)."""
 	pgs = frappe.get_single("PostGrid Settings")
+	# Whitelisted: only users who may edit the settings may register webhooks with their API keys
+	pgs.check_permission("write")
 	for mode in ["Test", "Live"]:
 		pgs.mode = mode
 		pgs.initialize_client()
