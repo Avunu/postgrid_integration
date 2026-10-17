@@ -7,7 +7,13 @@ readme = "README.md"
 license = { text = "MIT" }
 classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["version"]
-dependencies = ["postgrid-python", "pyjwt", "pypdf"]
+dependencies = [
+	# 1.x is the SDK this app is written against (postgrid.pm_key, postgrid.Letter); 2.x is a different client.
+	"postgrid-python>=1.0.14,<2",
+	# frappe v16 pins PyJWT~=2.13.0 and pypdf==6.15.0
+	"pyjwt>=2.10,<3",
+	"pypdf>=6.0,<7",
+]
 
 [build-system]
 requires = ["flit_core >=3.4,<4"]
