@@ -6,3 +6,7 @@ rules:
     config:
       policies:
         "*": hash-pin
+  # Every dependabot entry needs a cooldown of at least dependabot.cooldown-days.
+  dependabot-cooldown:
+    config:
+      days: 3
