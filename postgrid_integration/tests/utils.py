@@ -5,6 +5,7 @@
 
 import io
 from typing import Any
+from unittest.mock import patch
 
 import frappe
 import postgrid
@@ -66,6 +67,17 @@ def rollback_after_test(test: Any, name: str = "postgrid_test") -> None:
 	"""Undo the test's writes when it ends. IntegrationTestCase rolls back only once per class."""
 	frappe.db.savepoint(name)
 	test.addCleanup(frappe.db.rollback, save_point=name)
+
+
+def skip_schema_sync(test: Any) -> None:
+	"""Stub `frappe.db.updatedb` for the test, so frappe's customisation sync can run inside its savepoint.
+
+	`updatedb` commits on MariaDB (as DDL would), which ends the savepoint `rollback_after_test` opened.
+	The installed site already has every column, so the stub only skips a no-op sync.
+	"""
+	patcher = patch.object(frappe.db, "updatedb")
+	patcher.start()
+	test.addCleanup(patcher.stop)
 
 
 def make_request(body: bytes) -> Any:

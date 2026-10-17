@@ -12,6 +12,7 @@ import json
 import frappe
 
 from postgrid_integration.config import MAIL_TYPES
+from postgrid_integration.setup.custom_fields import mark_system_generated, remove_custom_fields
 
 
 def add_workspace_card_link(
@@ -128,7 +129,14 @@ def after_install() -> None:
 
 
 def after_migrate() -> None:
+	# frappe has synced custom/*.json by now, and a field it inserted has the flag off
+	mark_system_generated()
 	add_mail_types()
+
+
+def after_sync() -> None:
+	"""On install, frappe syncs custom/*.json after the after_install hooks and before these."""
+	mark_system_generated()
 
 
 def revert_field_options(doctype: str, field_name: str, options_to_remove: list[str]) -> None:
@@ -187,3 +195,4 @@ def before_uninstall() -> None:
 	# Remove Communication Types from the Notification and Communication Doctypes
 	revert_field_options("Notification", "channel", MAIL_TYPES)
 	revert_field_options("Communication", "communication_type", MAIL_TYPES)
+	remove_custom_fields()
