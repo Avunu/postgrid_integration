@@ -65,4 +65,4 @@ fail_under = 0
 exclude = [".venv/", "node_modules/", ".frappe-nix/", ".dev-dist/"]
 
 [tool.test_utils.static-analysis]
-whitelist = ["frappe.*"]
+whitelist = ["frappe.*", "erpnext.*"]
