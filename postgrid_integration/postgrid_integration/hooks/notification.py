@@ -1,22 +1,58 @@
 # Copyright (c) 2024, Avunu LLC and contributors
 # For license information, please see license.txt
 
-import frappe
-from frappe.email.doctype.notification.notification import (
-	Notification,
-	evaluate_alert,
-)
+"""Mailed Letter notifications, as an extension of frappe's Notification controller.
 
-from postgrid_integration.config import MAIL_TYPES
-from postgrid_integration.postgrid_integration.doctype.postgrid_settings import (
-	mail_letter,
-)
+frappe runs every enabled notification itself: on the document events (`Document.run_notifications`)
+and daily for the Days Before and Days After ones. It sends each one through
+`send_notification_by_channel`, so this extension mails the document there and leaves the other
+channels to frappe.
+"""
+
+from typing import TYPE_CHECKING, Any
+
+import frappe
+from frappe.email.doctype.notification.notification import Notification
+
+from postgrid_integration.postgrid_integration.doctype.postgrid_settings import mail_letter
+
+if TYPE_CHECKING:
+	from frappe.model.document import Document
+	from frappe.types import DF
+
+# The events a Mailed Letter notification mails on. Until it moved onto frappe's own notification
+# run, the app hooked only after_insert, on_update, on_submit and on_cancel, and the daily job, so
+# Value Change and the Minutes Before and After events never mailed. They still don't: turning them on
+# would start mailing (and paying for) letters on sites with such notifications set up.
+MAILED_EVENTS = frozenset({"New", "Save", "Submit", "Cancel", "Days Before", "Days After"})
+MAILED_METHODS = frozenset({"after_insert", "on_update", "on_submit", "on_cancel"})
 
 
 class DirectMailNotification(Notification):
-	def __init__(self, *args, **kwargs):
-		super().__init__(*args, **kwargs)
-		self.pg_parameters = {
+	if TYPE_CHECKING:
+		# Custom fields (custom/notification.json)
+		address_placement: DF.Literal["Insert Blank Page", "Top of First Page"]
+		cl_print_format: DF.Link | None
+		color: DF.Check
+		double_sided: DF.Check
+		envelope_type: DF.Literal["Standard Double Window", "Flat"]
+		express: DF.Check
+		from_address: DF.Link | None
+		to_address_document_field: str | None
+		to_contact_document_field: str | None
+		with_cover_letter: DF.Check
+
+	def send_notification_by_channel(self, doc: Document, context: dict[str, Any]) -> None:
+		if self.channel == "Mailed Letter" and self.mails_on_event():
+			self.mail_document(doc)
+		# frappe sends nothing on a channel it doesn't know, but still sends the system notification
+		super().send_notification_by_channel(doc, context)
+
+	def mails_on_event(self) -> bool:
+		return self.event in MAILED_EVENTS or (self.event == "Method" and self.method in MAILED_METHODS)
+
+	def get_pg_parameters(self) -> dict[str, Any]:
+		return {
 			"address_placement": (
 				"top_first_page" if self.address_placement == "Top of First Page" else "insert_blank_page"
 			),
@@ -30,141 +66,25 @@ class DirectMailNotification(Notification):
 			},
 		}
 
-	def send(self, doc):
-		if self.channel == "Mailed Letter":
-			from_address = self.from_address
-			to_address = doc.get(self.to_address_document_field)
-			to_contact = doc.get(self.to_contact_document_field, None)
-			if not to_address:
-				frappe.log_error(
-					title="Failed to mail notification",
-					message=f"Could not find address for {doc.name}",
-				)
-				return
-			try:
-				mail_letter(
-					doctype=doc.doctype,
-					docname=doc.name,
-					print_format=self.print_format,
-					from_address=from_address,
-					to_address=to_address,
-					to_contact=to_contact,
-					pg_parameters=self.pg_parameters,
-					cl_print_format=(self.cl_print_format if self.with_cover_letter else None),
-				)
-			except Exception:
-				frappe.log_error(title="Failed to mail notification", message=frappe.get_traceback())
-
-
-def direct_mail_notification_update(doc, method):
-	if doc.get("channel") in MAIL_TYPES:
-		if not doc.get("message"):
-			doc.message = "See the attached document."
-		# clear the direct_mail_notification_doctypes cache
-		frappe.cache.delete_value("direct_mail_notification_doctypes")
-
-
-def trigger_daily_direct_mail_notifications():
-	if frappe.flags.in_import or frappe.flags.in_patch:
-		# don"t send notifications while syncing or patching
-		return
-
-	notification_list = frappe.db.get_all(
-		"Notification",
-		filters={
-			"event": ["in", ["Days Before", "Days After"]],
-			"channel": ["in", MAIL_TYPES],
-			"enabled": 1,
-		},
-		pluck="name",
-	)
-	for n in notification_list:
-		notification = DirectMailNotification("Notification", n)
-
-		for doc in notification.get_documents_for_today():
-			evaluate_alert(doc, notification, notification.event)
-			frappe.db.commit()
-
-
-def run_direct_mail_notifications(doc, method):
-	"""Run notifications for any relavant doc methods"""
-	if (
-		(frappe.flags.in_import and frappe.flags.mute_emails)
-		or frappe.flags.in_patch
-		or frappe.flags.in_install
-	):
-		return
-
-	# only run on doctypes with notifications assigned
-	def _get_direct_mail_notification_doctypes():
-		"""returns enabled notifications for the current doctype"""
-
-		return frappe.db.get_all(
-			"Notification",
-			filters={
-				"enabled": 1,
-				"channel": ["in", MAIL_TYPES],
-			},
-			distinct=True,
-			pluck="document_type",
-		)
-
-	direct_mail_notification_doctypes = frappe.cache.get_value(
-		"direct_mail_notification_doctypes", _get_direct_mail_notification_doctypes
-	)
-
-	if doc.doctype not in direct_mail_notification_doctypes:
-		return
-
-	if doc.flags.direct_mail_notifications_executed is None:
-		doc.flags.direct_mail_notifications_executed = []
-
-	if doc.flags.direct_mail_notifications is None:
-
-		def _get_notifications():
-			"""returns enabled notifications for the current doctype"""
-
-			return frappe.db.get_all(
-				"Notification",
-				fields=["name", "event", "method"],
-				filters={
-					"enabled": 1,
-					"document_type": doc.doctype,
-					"channel": ["in", MAIL_TYPES],
-				},
+	def mail_document(self, doc: Document) -> None:
+		to_address = doc.get(self.to_address_document_field) if self.to_address_document_field else None
+		to_contact = doc.get(self.to_contact_document_field) if self.to_contact_document_field else None
+		if not to_address or not self.from_address:
+			frappe.log_error(
+				title="Failed to mail notification",
+				message=f"Could not find address for {doc.name}",
 			)
-
-		doc.flags.direct_mail_notifications = frappe.cache.hget(
-			"direct_mail_notifications", doc.doctype, _get_notifications
-		)
-
-	if not doc.flags.direct_mail_notifications:
-		return
-
-	def _evaluate_alert(notification):
-		if notification.name in doc.flags.direct_mail_notifications_executed:
 			return
-
-		notification = DirectMailNotification("Notification", notification.name)
-
-		evaluate_alert(doc, notification, notification.event)
-
-		doc.flags.direct_mail_notifications_executed.append(notification.name)
-
-	event_map = {
-		"on_update": "Save",
-		"after_insert": "New",
-		"on_submit": "Submit",
-		"on_cancel": "Cancel",
-	}
-
-	if not doc.flags.in_insert:
-		# value change is not applicable in insert
-		event_map["on_change"] = "Value Change"
-
-	for notification in doc.flags.direct_mail_notifications:
-		event = event_map.get(method)
-		if (event and notification.event == event) or (
-			notification.event == "Method" and method == notification.method
-		):
-			_evaluate_alert(notification)
+		try:
+			mail_letter(
+				doctype=doc.doctype,
+				docname=doc.name,
+				print_format=self.print_format,
+				from_address=self.from_address,
+				to_address=to_address,
+				to_contact=to_contact,
+				pg_parameters=self.get_pg_parameters(),
+				cl_print_format=(self.cl_print_format if self.with_cover_letter else None),
+			)
+		except Exception:
+			frappe.log_error(title="Failed to mail notification", message=frappe.get_traceback())

@@ -15,22 +15,11 @@ app_publisher = "Avunu LLC"
 app_title = "PostGrid Integration"
 before_uninstall = "postgrid_integration.install.before_uninstall"
 doctype_js = {"Notification": "public/js/notification.js"}
+# Mailed Letter notifications ride on frappe's own notification run, which already covers every DocType
+# and the daily events, so the app needs no doc_events["*"] or scheduler job of its own.
+extend_doctype_class = {
+	"Notification": ["postgrid_integration.postgrid_integration.hooks.notification.DirectMailNotification"],
+}
 page_js = {"print": "public/js/print_view.js"}
-scheduler_events = {
-	"daily": [
-		"postgrid_integration.postgrid_integration.hooks.notification.trigger_daily_direct_mail_notifications"
-	]
-}
-doc_events = {
-	"*": {
-		"after_insert": "postgrid_integration.postgrid_integration.hooks.notification.run_direct_mail_notifications",
-		"on_update": "postgrid_integration.postgrid_integration.hooks.notification.run_direct_mail_notifications",
-		"on_submit": "postgrid_integration.postgrid_integration.hooks.notification.run_direct_mail_notifications",
-		"on_cancel": "postgrid_integration.postgrid_integration.hooks.notification.run_direct_mail_notifications",
-	},
-	"Notification": {
-		"on_update": "postgrid_integration.postgrid_integration.hooks.notification.direct_mail_notification_update",
-	},
-}
 # ERPNext is optional: the desk scripts use its default company address only when it is installed.
 required_apps = []
