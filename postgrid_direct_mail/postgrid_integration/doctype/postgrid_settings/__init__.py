@@ -9,7 +9,7 @@ from typing import Any
 import frappe
 import jwt
 
-from postgrid_integration.config import MAIL_TYPES
+from postgrid_direct_mail.config import MAIL_TYPES
 
 STATUS_MAP = {
 	"ready": {

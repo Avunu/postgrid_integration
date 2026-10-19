@@ -1,5 +1,5 @@
 [project]
-name = "postgrid_integration"
+name = "postgrid_direct_mail"
 authors = [{ name = "Avunu LLC", email = "mail@avu.nu" }]
 description = "Direct Mail Frappe documents via PostGrid"
 requires-python = ">=3.14"
@@ -49,7 +49,7 @@ docstring-code-format = true
 python-version = "3.14"
 
 [tool.ty.src]
-include = ["postgrid_integration"]
+include = ["postgrid_direct_mail"]
 
 [tool.ty.terminal]
 error-on-warning = true
@@ -68,4 +68,6 @@ fail_under = 80
 exclude = [".venv/", "node_modules/", ".frappe-nix/", ".dev-dist/", ".devenv/", ".direnv/"]
 
 [tool.test_utils.static-analysis]
-whitelist = ["frappe.*", "erpnext.*"]
+# postgrid_integration.*: the old dotted paths the rename shim in hooks.py maps to their new ones;
+# they name no module on purpose. Drop it with the shim.
+whitelist = ["frappe.*", "erpnext.*", "postgrid_integration.*"]

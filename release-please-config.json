@@ -6,12 +6,12 @@
 	"packages": {
 		".": {
 			"release-type": "node",
-			"package-name": "postgrid-integration",
+			"package-name": "postgrid-direct-mail",
 			"changelog-path": "CHANGELOG.md",
 			"extra-files": [
 				{
 					"type": "generic",
-					"path": "postgrid_integration/__init__.py"
+					"path": "postgrid_direct_mail/__init__.py"
 				}
 			]
 		}

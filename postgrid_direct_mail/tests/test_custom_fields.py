@@ -9,9 +9,9 @@ from frappe.custom.doctype.customize_form.customize_form import reset_customizat
 from frappe.modules.utils import sync_customizations
 from frappe.tests import IntegrationTestCase
 
-from postgrid_integration import install
-from postgrid_integration.setup.custom_fields import get_custom_fields
-from postgrid_integration.tests.utils import rollback_after_test, skip_schema_sync
+from postgrid_direct_mail import install
+from postgrid_direct_mail.setup.custom_fields import get_custom_fields
+from postgrid_direct_mail.tests.utils import rollback_after_test, skip_schema_sync
 
 CUSTOM_DIR = Path(__file__).resolve().parent.parent / "postgrid_integration" / "custom"
 
@@ -76,7 +76,7 @@ class TestCustomFields(IntegrationTestCase):
 		# what install_app does: after_install, then frappe's customisation sync, then after_sync
 		clear_flag("Address", "postgrid_id")
 		install.after_install()
-		sync_customizations("postgrid_integration")
+		sync_customizations("postgrid_direct_mail")
 		install.after_sync()
 		self.assert_installed()
 
@@ -89,13 +89,13 @@ class TestCustomFields(IntegrationTestCase):
 	def test_sync_keeps_the_flag(self):
 		# frappe's own customisation sync (bench migrate, before after_migrate) leaves the flag alone,
 		# because the files don't name it
-		sync_customizations("postgrid_integration")
+		sync_customizations("postgrid_direct_mail")
 		self.assert_installed()
 
 	def test_new_field_from_sync_gets_the_flag(self):
 		# a field the sync inserts comes in with the flag off; after_migrate turns it on
 		frappe.db.delete("Custom Field", {"dt": "Notification", "fieldname": "cl_print_format"})
-		sync_customizations("postgrid_integration")
+		sync_customizations("postgrid_direct_mail")
 		self.assertEqual(
 			frappe.db.get_value(
 				"Custom Field", {"dt": "Notification", "fieldname": "cl_print_format"}, "is_system_generated"

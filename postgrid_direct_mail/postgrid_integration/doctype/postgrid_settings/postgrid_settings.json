@@ -1,7 +1,7 @@
 {
  "actions": [
   {
-   "action": "postgrid_integration.postgrid_integration.doctype.postgrid_settings.postgrid_settings.reset_webhooks",
+   "action": "postgrid_direct_mail.postgrid_integration.doctype.postgrid_settings.postgrid_settings.reset_webhooks",
    "action_type": "Server Action",
    "label": "Reset Webhooks"
   }
@@ -135,7 +135,7 @@
    "fieldname": "help_text",
    "fieldtype": "HTML",
    "label": "Help Text",
-   "options": "<p>PostGrid Integration allows you to send Frappe print-formatted documents as direct mail. To get started,&nbsp;<a href=\"https://www.postgrid.com/ref/avunu\" target=\"_blank\" rel=\"noopener\">set up your PostGrid Print &amp; Mail account&nbsp;\u2197</a> and enter your API credentials here.</p>"
+   "options": "<p>Direct Mail via PostGrid allows you to send Frappe print-formatted documents as direct mail. To get started,&nbsp;<a href=\"https://www.postgrid.com/ref/avunu\" target=\"_blank\" rel=\"noopener\">set up your PostGrid Print &amp; Mail account&nbsp;\u2197</a> and enter your API credentials here.</p>"
   },
   {
    "depends_on": "eval:!doc.pm_key_live",
@@ -146,7 +146,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-10-16 12:00:00.000000",
+ "modified": "2026-10-19 07:54:01.948552",
  "modified_by": "Administrator",
  "module": "PostGrid Integration",
  "name": "PostGrid Settings",

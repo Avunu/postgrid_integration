@@ -5,8 +5,8 @@ requires-python = "==3.14.*"
 [manifest]
 members = [
     "frappe",
-    "postgrid-integration",
-    "postgrid-integration-bench",
+    "postgrid-direct-mail",
+    "postgrid-direct-mail-bench",
 ]
 overrides = [
     { name = "click", specifier = "~=8.3.1" },
@@ -1517,8 +1517,8 @@ wheels = [
 ]
 
 [[package]]
-name = "postgrid-integration"
-source = { editable = "apps/postgrid_integration" }
+name = "postgrid-direct-mail"
+source = { editable = "apps/postgrid_direct_mail" }
 dependencies = [
     { name = "postgrid-python" },
     { name = "pyjwt" },
@@ -1533,7 +1533,7 @@ requires-dist = [
 ]
 
 [[package]]
-name = "postgrid-integration-bench"
+name = "postgrid-direct-mail-bench"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

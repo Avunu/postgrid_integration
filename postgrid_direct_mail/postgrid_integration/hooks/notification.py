@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any
 import frappe
 from frappe.email.doctype.notification.notification import Notification
 
-from postgrid_integration.postgrid_integration.doctype.postgrid_settings import mail_letter
+from postgrid_direct_mail.postgrid_integration.doctype.postgrid_settings import mail_letter
 
 if TYPE_CHECKING:
 	from frappe.model.document import Document

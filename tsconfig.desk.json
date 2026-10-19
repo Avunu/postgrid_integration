@@ -5,16 +5,16 @@
 		"composite": true
 	},
 	"include": [
-		"postgrid_integration/**/*.js",
+		"postgrid_direct_mail/**/*.js",
 		"types/doctypes.d.ts",
-		"types/postgrid_integration.augment.d.ts"
+		"types/postgrid_direct_mail.augment.d.ts"
 	],
 	"exclude": [
 		"node_modules",
 		"**/*.bundle.js",
 		"**/public/dist/**",
-		"postgrid_integration/www/**",
+		"postgrid_direct_mail/www/**",
 		"**/web_form/**",
-		"postgrid_integration/templates/**"
+		"postgrid_direct_mail/templates/**"
 	]
 }

@@ -673,7 +673,7 @@ wheels = [
 ]
 
 [[package]]
-name = "postgrid-integration-tools"
+name = "postgrid-direct-mail-tools"
 version = "0"
 source = { virtual = "." }
 dependencies = [

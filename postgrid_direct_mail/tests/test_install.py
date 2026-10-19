@@ -6,8 +6,8 @@ import json
 import frappe
 from frappe.tests import IntegrationTestCase
 
-from postgrid_integration import install
-from postgrid_integration.tests.utils import rollback_after_test
+from postgrid_direct_mail import install
+from postgrid_direct_mail.tests.utils import rollback_after_test
 
 
 def setter_value(doctype: str, fieldname: str) -> str | None:

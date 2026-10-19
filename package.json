@@ -1,8 +1,8 @@
 {
-	"name": "postgrid-integration",
+	"name": "postgrid-direct-mail",
 	"version": "0.0.1",
 	"private": true,
-	"description": "PostGrid Integration providing direct mail on demand for Frappe Documents",
+	"description": "Direct mail on demand for Frappe documents via PostGrid",
 	"license": "MIT",
 	"author": "Avunu LLC",
 	"type": "module",
