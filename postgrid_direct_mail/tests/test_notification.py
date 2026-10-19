@@ -7,11 +7,11 @@ import frappe
 from frappe.email.doctype.notification.notification import Notification
 from frappe.tests import IntegrationTestCase
 
-from postgrid_integration.install import after_migrate
-from postgrid_integration.postgrid_integration.hooks.notification import DirectMailNotification
-from postgrid_integration.tests.utils import make_address, rollback_after_test
+from postgrid_direct_mail.install import after_migrate
+from postgrid_direct_mail.postgrid_integration.hooks.notification import DirectMailNotification
+from postgrid_direct_mail.tests.utils import make_address, rollback_after_test
 
-MAIL_LETTER = "postgrid_integration.postgrid_integration.hooks.notification.mail_letter"
+MAIL_LETTER = "postgrid_direct_mail.postgrid_integration.hooks.notification.mail_letter"
 
 
 class TestDirectMailNotification(IntegrationTestCase):

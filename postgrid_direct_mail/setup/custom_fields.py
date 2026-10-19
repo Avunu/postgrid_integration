@@ -17,7 +17,7 @@ from pathlib import Path
 import frappe
 from frappe.custom.doctype.custom_field.custom_field import delete_custom_fields
 
-APP = "postgrid_integration"
+APP = "postgrid_direct_mail"
 
 
 def get_custom_fields() -> dict[str, list[str]]:

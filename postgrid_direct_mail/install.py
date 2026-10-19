@@ -11,8 +11,8 @@ import json
 
 import frappe
 
-from postgrid_integration.config import MAIL_TYPES
-from postgrid_integration.setup.custom_fields import mark_system_generated, remove_custom_fields
+from postgrid_direct_mail.config import MAIL_TYPES
+from postgrid_direct_mail.setup.custom_fields import mark_system_generated, remove_custom_fields
 
 
 def add_workspace_card_link(

@@ -28,7 +28,7 @@
 		"unicorn/no-array-sort": "off"
 	},
 	"ignorePatterns": [
-		"postgrid_integration/public/dist/**",
+		"postgrid_direct_mail/public/dist/**",
 		".frappe-nix/**",
 		".dev-dist/**",
 		"nix/**",
@@ -48,15 +48,15 @@
 			}
 		},
 		{
-			"files": ["postgrid_integration/public/js/*.bundle.ts", "postgrid_integration/public/js/*.bundle.js"],
+			"files": ["postgrid_direct_mail/public/js/*.bundle.ts", "postgrid_direct_mail/public/js/*.bundle.js"],
 			"rules": {
 				"import/no-unassigned-import": "off"
 			}
 		},
 		{
 			"files": [
-				"postgrid_integration/public/js/notification.js",
-				"postgrid_integration/public/js/print_view.js"
+				"postgrid_direct_mail/public/js/notification.js",
+				"postgrid_direct_mail/public/js/print_view.js"
 			],
 			"globals": {
 				"frappe": "readonly",

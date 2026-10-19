@@ -48,7 +48,7 @@ if (BasePrintView) {
 
 		get_postgrid_defaults() {
 			void frappe.call({
-				method: "postgrid_integration.postgrid_integration.doctype.postgrid_settings.get_postgrid_defaults",
+				method: "postgrid_direct_mail.postgrid_integration.doctype.postgrid_settings.get_postgrid_defaults",
 				/** @param {import("frappe-types").FrappeResponse<PostGridDefaults>} r */
 				callback: (r) => {
 					this.postgrid_defaults = r.message;
@@ -233,7 +233,7 @@ if (BasePrintView) {
 			const current_print_format = this.selected_format();
 
 			void frappe.call({
-				method: "postgrid_integration.postgrid_integration.doctype.postgrid_settings.mail_letter",
+				method: "postgrid_direct_mail.postgrid_integration.doctype.postgrid_settings.mail_letter",
 				args: {
 					doctype: doc.doctype,
 					docname: doc.name,

@@ -10,12 +10,12 @@ import jwt
 import postgrid
 from frappe.tests import IntegrationTestCase
 
-from postgrid_integration.postgrid_integration.doctype import postgrid_settings as api
-from postgrid_integration.postgrid_integration.doctype.postgrid_settings.postgrid_settings import (
+from postgrid_direct_mail.postgrid_integration.doctype import postgrid_settings as api
+from postgrid_direct_mail.postgrid_integration.doctype.postgrid_settings.postgrid_settings import (
 	PostGridSettings,
 	reset_webhooks,
 )
-from postgrid_integration.tests.utils import (
+from postgrid_direct_mail.tests.utils import (
 	count_pages,
 	make_address,
 	make_contact,

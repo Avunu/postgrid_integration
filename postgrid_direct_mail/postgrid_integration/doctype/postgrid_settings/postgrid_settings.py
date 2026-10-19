@@ -38,7 +38,7 @@ class PostGridSettings(Document):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.webhook_url = frappe.utils.get_url(
-			"/api/method/postgrid_integration.postgrid_integration.doctype.postgrid_settings.webhooks"
+			"/api/method/postgrid_direct_mail.postgrid_integration.doctype.postgrid_settings.webhooks"
 		)
 
 	def initialize_client(self) -> ModuleType:
@@ -78,7 +78,7 @@ class PostGridSettings(Document):
 				"return_envelope_order.updated",
 			],
 			url=self.webhook_url,
-			description="PostGrid Integration Webhook",
+			description="Direct Mail via PostGrid Webhook",
 			secret=self.webhooks_secret,
 		)
 		self.set(f"webhook_id_{self.mode.lower()}", webhook.id)
