@@ -1,6 +1,6 @@
 {
 	"name": "postgrid-integration",
-	"version": "0.0.1",
+	"version": "16.0.0",
 	"private": true,
 	"description": "PostGrid Integration providing direct mail on demand for Frappe Documents",
 	"license": "MIT",
