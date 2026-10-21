@@ -1,7 +1,7 @@
 [project]
 name = "postgrid_direct_mail"
 authors = [{ name = "Avunu LLC", email = "mail@avu.nu" }]
-description = "Direct Mail Frappe documents via PostGrid"
+description = "Direct mail for Frappe: send documents as physical letters via PostGrid"
 requires-python = ">=3.14"
 readme = "README.md"
 license = { text = "MIT" }

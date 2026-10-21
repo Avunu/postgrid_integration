@@ -1,0 +1,10 @@
+# The app's registry listing (docs/app-standards/marketplace.md); frappe-listing check validates it.
+schema = 1
+title = "Direct Mail via PostGrid"
+tagline = "Direct mail for Frappe: send documents as physical letters via PostGrid"
+type = "integration"
+category = "Integrations"
+categories = ["Communication"]
+website = "https://avunu.net/open-source/postgrid_direct_mail/"
+documentation = "https://docs.avunu.net/postgrid-direct-mail/"
+apps_screen = false

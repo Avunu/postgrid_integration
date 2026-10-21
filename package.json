@@ -2,7 +2,7 @@
 	"name": "postgrid-direct-mail",
 	"version": "0.0.1",
 	"private": true,
-	"description": "Direct mail on demand for Frappe documents via PostGrid",
+	"description": "Direct mail for Frappe: send documents as physical letters via PostGrid",
 	"license": "MIT",
 	"author": "Avunu LLC",
 	"type": "module",
