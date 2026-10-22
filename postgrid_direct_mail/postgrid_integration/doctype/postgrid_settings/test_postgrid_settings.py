@@ -345,6 +345,13 @@ class TestMailLetter(IntegrationTestCase):
 		self.assertEqual(count_pages(request["pdf"]), 3)
 		self.assertEqual(self.get_print.call_count, 2)
 
+	def test_mails_to_the_contact_argument(self):
+		# A Mailed Letter notification passes its To Contact Field's value as to_contact, outside pg_parameters
+		with patch.object(postgrid.Letter, "create", return_value=make_letter("letter_contact")) as create:
+			self.mail(to_contact=self.contact, pg_parameters={"misc": {}})
+		to = create.call_args.kwargs["to"]
+		self.assertEqual((to["first_name"], to["last_name"]), ("Ada", "Lovelace"))
+
 	def test_failure_is_recorded(self):
 		error = postgrid.PMError(
 			status_code=400, object="error", type="validation_error", message="Bad address"
