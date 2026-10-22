@@ -80,8 +80,11 @@ def webhooks() -> int | None:
 	data: dict[str, Any] = payload["data"]
 
 	request_id = data["id"]
-	pg_status = data["status"]
-	status = STATUS_MAP[pg_status]
+	status = STATUS_MAP.get(data.get("status"))
+	if not status:
+		# Not a letter status: the webhook also gets the return envelope order events, which this app
+		# doesn't track. Answer 200 so PostGrid doesn't treat them as failed deliveries.
+		return 200
 	ig = frappe.db.exists("Integration Request", {"request_id": request_id})
 	if ig:
 		frappe.db.set_value("Integration Request", ig, "status", status["status"])

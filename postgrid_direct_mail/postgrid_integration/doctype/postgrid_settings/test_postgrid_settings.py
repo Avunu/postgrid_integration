@@ -189,6 +189,23 @@ class TestWebhooks(IntegrationTestCase):
 		self.assertEqual(frappe.db.get_value("Integration Request", ig, "status"), "Authorized")
 		self.assertEqual(frappe.db.get_value("Communication", com, "delivery_status"), "Sending")
 
+	def test_ignores_unknown_status(self):
+		# Return envelope orders have their own statuses, which aren't in STATUS_MAP
+		set_settings(update_addresses=1)
+		ig, com = self.make_records("return_envelope_order_x")
+		address = make_address("Unchanged", postgrid_id="contact_unchanged")
+		payload = {
+			"data": {
+				"id": "return_envelope_order_x",
+				"status": "placed",
+				"to": {"id": "contact_unchanged", "addressStatus": "verified", "city": "Elsewhere"},
+			}
+		}
+		self.assertEqual(self.post(payload), 200)
+		self.assertEqual(frappe.db.get_value("Integration Request", ig, "status"), "Queued")
+		self.assertEqual(frappe.db.get_value("Communication", com, "delivery_status"), "Scheduled")
+		self.assertEqual(frappe.db.get_value("Address", address, "city"), "Lancaster")
+
 	def test_saves_pdf_once(self):
 		set_settings(save_pdf_files=1)
 		_, com = self.make_records("letter_pdf")
