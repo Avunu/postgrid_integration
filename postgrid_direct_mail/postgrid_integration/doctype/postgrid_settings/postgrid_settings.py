@@ -83,15 +83,34 @@ class PostGridSettings(Document):
 		)
 		self.set(f"webhook_id_{self.mode.lower()}", webhook.id)
 
+	def delete_webhook(self):
+		"""Delete the current mode's registered webhook from PostGrid, if there is one."""
+		webhook_id = self.get(f"webhook_id_{self.mode.lower()}")
+		if not webhook_id:
+			return
+		try:
+			self.client.Webhook.delete(webhook_id)
+		except postgrid.PMError as e:
+			# Already gone, for example deleted in PostGrid's dashboard
+			if e.status_code != 404:
+				raise
+
 
 @frappe.whitelist()
-def reset_webhooks(doc: str | dict[str, Any]) -> str | dict[str, Any]:
-	"""Register a new webhook on the Test and the Live account (the settings form's Reset Webhooks action)."""
+def reset_webhooks(doc: str | dict[str, Any]) -> dict[str, Any]:
+	"""Replace the webhook on the Test and the Live account (the settings form's Reset Webhooks action)."""
 	pgs = frappe.get_single("PostGrid Settings")
 	# Whitelisted: only users who may edit the settings may register webhooks with their API keys
 	pgs.check_permission("write")
-	for mode in ["Test", "Live"]:
-		pgs.mode = mode
+	mode = pgs.mode
+	for webhook_mode in ["Test", "Live"]:
+		pgs.mode = webhook_mode
 		pgs.initialize_client()
+		# Delete the old webhook first, or PostGrid would send every event to both
+		pgs.delete_webhook()
 		pgs.create_webhook()
-	return doc
+		fieldname = f"webhook_id_{webhook_mode.lower()}"
+		pgs.db_set(fieldname, pgs.get(fieldname))
+	pgs.mode = mode
+	# The form applies the returned settings, so it shows the new webhook ids
+	return pgs.as_dict()

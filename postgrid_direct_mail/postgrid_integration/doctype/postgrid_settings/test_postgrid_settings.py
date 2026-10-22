@@ -87,27 +87,85 @@ class TestPostGridSettings(IntegrationTestCase):
 		create_again.assert_not_called()
 
 	def test_reset_webhooks(self):
-		set_settings(webhooks_secret=SECRET)
+		set_settings(webhooks_secret=SECRET, mode="Live", webhook_id_test="webhook_old_test")
 		ids = iter(["webhook_test", "webhook_live"])
-		keys = []
+		calls = []
 
 		def create(**kwargs):
-			keys.append(postgrid.pm_key)
+			calls.append(("create", postgrid.pm_key))
 			return SimpleNamespace(id=next(ids))
 
+		def delete(webhook_id):
+			calls.append(("delete", postgrid.pm_key, webhook_id))
+
 		doc = json.dumps({"doctype": "PostGrid Settings"})
-		with patch.object(postgrid.Webhook, "create", side_effect=create):
-			self.assertEqual(reset_webhooks(doc), doc)
-		self.assertEqual(keys, ["test_sk_key", "live_sk_key"])
+		with (
+			patch.object(postgrid.Webhook, "create", side_effect=create),
+			patch.object(postgrid.Webhook, "delete", side_effect=delete),
+		):
+			result = reset_webhooks(doc)
+
+		# The old Test webhook is deleted before its replacement is made; Live had none to delete
+		self.assertEqual(
+			calls,
+			[
+				("delete", "test_sk_key", "webhook_old_test"),
+				("create", "test_sk_key"),
+				("create", "live_sk_key"),
+			],
+		)
+		# The new ids are stored, the mode is left alone, and the form gets them back
+		settings = get_settings()
+		self.assertEqual(
+			(settings.webhook_id_test, settings.webhook_id_live), ("webhook_test", "webhook_live")
+		)
+		self.assertEqual(settings.mode, "Live")
+		self.assertEqual(
+			(result["webhook_id_test"], result["webhook_id_live"]), ("webhook_test", "webhook_live")
+		)
+		self.assertEqual(result["mode"], "Live")
+
+	def test_reset_webhooks_when_the_old_one_is_gone(self):
+		set_settings(webhooks_secret=SECRET, webhook_id_test="webhook_gone", webhook_id_live="webhook_gone")
+		not_found = postgrid.PMError(status_code=404, object="error", type="not_found", message="Not found")
+		ids = iter(["webhook_test", "webhook_live"])
+		with (
+			patch.object(
+				postgrid.Webhook, "create", side_effect=lambda **kwargs: SimpleNamespace(id=next(ids))
+			),
+			patch.object(postgrid.Webhook, "delete", side_effect=not_found),
+		):
+			reset_webhooks(json.dumps({"doctype": "PostGrid Settings"}))
+		settings = get_settings()
+		self.assertEqual(
+			(settings.webhook_id_test, settings.webhook_id_live), ("webhook_test", "webhook_live")
+		)
+
+	def test_reset_webhooks_stops_when_delete_fails(self):
+		set_settings(webhooks_secret=SECRET, webhook_id_test="webhook_old_test")
+		error = postgrid.PMError(status_code=401, object="error", type="unauthorized", message="Bad key")
+		with (
+			patch.object(postgrid.Webhook, "create") as create,
+			patch.object(postgrid.Webhook, "delete", side_effect=error),
+			self.assertRaises(postgrid.PMError),
+		):
+			reset_webhooks(json.dumps({"doctype": "PostGrid Settings"}))
+		create.assert_not_called()
+		self.assertEqual(get_settings().webhook_id_test, "webhook_old_test")
 
 	def test_reset_webhooks_needs_write_permission(self):
 		set_settings(webhooks_secret=SECRET)
 		doc = json.dumps({"doctype": "PostGrid Settings"})
 		self.addCleanup(frappe.set_user, frappe.session.user)
 		frappe.set_user("Guest")
-		with patch.object(postgrid.Webhook, "create") as create, self.assertRaises(frappe.PermissionError):
+		with (
+			patch.object(postgrid.Webhook, "create") as create,
+			patch.object(postgrid.Webhook, "delete") as delete,
+			self.assertRaises(frappe.PermissionError),
+		):
 			reset_webhooks(doc)
 		create.assert_not_called()
+		delete.assert_not_called()
 
 	def test_get_postgrid_defaults(self):
 		set_settings(
