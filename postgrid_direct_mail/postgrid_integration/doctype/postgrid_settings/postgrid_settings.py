@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 import frappe
 import postgrid
+from frappe import _
 from frappe.model.document import Document
 
 if TYPE_CHECKING:
@@ -102,6 +103,10 @@ def reset_webhooks(doc: str | dict[str, Any]) -> dict[str, Any]:
 	pgs = frappe.get_single("PostGrid Settings")
 	# Whitelisted: only users who may edit the settings may register webhooks with their API keys
 	pgs.check_permission("write")
+	# Check both keys before touching PostGrid. A missing Live key would otherwise fail after Test's
+	# webhook was already replaced, and the rollback would lose the new webhook's id.
+	if not all(pgs.get_password(f"pm_key_{m}", raise_exception=False) for m in ("test", "live")):
+		frappe.throw(_("Reset Webhooks needs both the Test and the Live API key."))
 	mode = pgs.mode
 	for webhook_mode in ["Test", "Live"]:
 		pgs.mode = webhook_mode

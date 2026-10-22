@@ -153,6 +153,23 @@ class TestPostGridSettings(IntegrationTestCase):
 		create.assert_not_called()
 		self.assertEqual(get_settings().webhook_id_test, "webhook_old_test")
 
+	def test_reset_webhooks_needs_both_keys(self):
+		# With only a Test key, nothing is deleted or created on the Test account before the Live key fails
+		from frappe.utils.password import remove_encrypted_password
+
+		remove_encrypted_password("PostGrid Settings", "PostGrid Settings", "pm_key_live")
+		frappe.db.set_single_value("PostGrid Settings", "pm_key_live", None)
+		set_settings(webhooks_secret=SECRET, webhook_id_test="webhook_old_test")
+		with (
+			patch.object(postgrid.Webhook, "create") as create,
+			patch.object(postgrid.Webhook, "delete") as delete,
+			self.assertRaises(frappe.ValidationError),
+		):
+			reset_webhooks(json.dumps({"doctype": "PostGrid Settings"}))
+		delete.assert_not_called()
+		create.assert_not_called()
+		self.assertEqual(get_settings().webhook_id_test, "webhook_old_test")
+
 	def test_reset_webhooks_needs_write_permission(self):
 		set_settings(webhooks_secret=SECRET)
 		doc = json.dumps({"doctype": "PostGrid Settings"})
