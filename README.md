@@ -76,7 +76,7 @@ Until the first release creates the `version-16` branch, install from `develop` 
 3. Enter the Test and Live API keys, and choose the **Mode** that is in use.
 4. Set the default options: **Address Placement**, **Envelope Type**, **Double Sided**, **Color** and **Express**. The Mail dialog starts from these.
 5. Choose whether to **Save PDF Files** (keep PostGrid's PDF of each letter) and **Update Addresses** (overwrite an address with PostGrid's verified version).
-6. Save. The first save in each mode registers a webhook with PostGrid for that mode, so the site must be reachable from the internet for delivery updates to arrive. **Reset Webhooks** in the form's actions registers a new webhook on both the Test and the Live account, so it needs both API keys.
+6. Save. The first save in each mode registers a webhook with PostGrid for that mode, so the site must be reachable from the internet for delivery updates to arrive. **Reset Webhooks** in the form's actions replaces the webhook on both the Test and the Live account: it deletes the one the settings record, registers a new one and records its id. It needs both API keys, and changes nothing when one is missing.
 
 To mail documents automatically, create a **Notification**, set its **Channel** to **Mailed Letter**, and fill in the **Direct Mail Settings** section: the **From Address**, the document's **To Address Field** and **To Contact Field**, the print format, the mailing options and an optional cover letter.
 
