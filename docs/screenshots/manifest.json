@@ -1,0 +1,82 @@
+[
+	{
+		"name": "mail-dialog",
+		"theme": "dark",
+		"alt": "The Mail Letter dialog on a statement's print view, with the sender, recipient, contact and mailing options filled in",
+		"featured": true,
+		"readme": "hero",
+		"width": 2880,
+		"height": 1800,
+		"sha256": "2baff70aac10438110129a85905a541de504f80c82d7181fa06c597d27dfabd6"
+	},
+	{
+		"name": "mail-dialog",
+		"theme": "light",
+		"alt": "The Mail Letter dialog on a statement's print view, with the sender, recipient, contact and mailing options filled in",
+		"featured": true,
+		"readme": "hero",
+		"width": 2880,
+		"height": 1800,
+		"sha256": "2db15c53f383bc2d5b9d3bf0f3aff263da141fa5dd08b01c479ca7b7919bdf9d"
+	},
+	{
+		"name": "notification",
+		"theme": "dark",
+		"alt": "A Notification on the Mailed Letter channel, with its sender, recipient fields and mailing options",
+		"featured": true,
+		"readme": "feature",
+		"width": 2880,
+		"height": 1800,
+		"sha256": "951c0d46729601cac93d129eebcbd70232f89ec1fdd8a59f1d8edc7bc1eb19f7"
+	},
+	{
+		"name": "notification",
+		"theme": "light",
+		"alt": "A Notification on the Mailed Letter channel, with its sender, recipient fields and mailing options",
+		"featured": true,
+		"readme": "feature",
+		"width": 2880,
+		"height": 1800,
+		"sha256": "420faf26227875dacddac72af06680e090c5ee26744def38893fc513dce7b0cc"
+	},
+	{
+		"name": "settings",
+		"theme": "dark",
+		"alt": "PostGrid Settings in Test mode, with the default mailing options",
+		"featured": false,
+		"readme": "feature",
+		"width": 2880,
+		"height": 1800,
+		"sha256": "4ae0fb372608b609634ba7c5f3262566a16033a190ba25793cb207c7fea5bb8d"
+	},
+	{
+		"name": "settings",
+		"theme": "light",
+		"alt": "PostGrid Settings in Test mode, with the default mailing options",
+		"featured": false,
+		"readme": "feature",
+		"width": 2880,
+		"height": 1800,
+		"sha256": "bab9c685a2e6251080233f618dba2ccfce8d00942d9dcfaf8bc2ebd47b3ab4b9"
+	},
+	{
+		"name": "timeline",
+		"theme": "dark",
+		"alt": "A mailed letter in the statement's timeline, with its recipient, delivery status and PostGrid menu",
+		"featured": true,
+		"readme": "feature",
+		"width": 2880,
+		"height": 1800,
+		"sha256": "202bc9b7ac4da2108a7fa55f6411d2beb7d400f47224e1e70f925adc8e088e65"
+	},
+	{
+		"name": "timeline",
+		"theme": "light",
+		"alt": "A mailed letter in the statement's timeline, with its recipient, delivery status and PostGrid menu",
+		"featured": true,
+		"readme": "feature",
+		"width": 2880,
+		"height": 1800,
+		"sha256": "8f370acf991513e476275d7a5ee061aa91b7e5026796901b540644ea36320b48"
+	}
+]

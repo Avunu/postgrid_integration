@@ -8,7 +8,7 @@ after_install = "postgrid_direct_mail.install.after_install"
 after_migrate = "postgrid_direct_mail.install.after_migrate"
 # frappe syncs custom/*.json after after_install, so a new site's fields are flagged here
 after_sync = "postgrid_direct_mail.install.after_sync"
-app_description = "Direct mail on demand for Frappe documents via PostGrid"
+app_description = "Direct mail for Frappe: send documents as physical letters via PostGrid"
 app_email = "mail@avu.nu"
 app_include_js = "main.bundle.js"
 app_license = "MIT"

@@ -1,15 +1,16 @@
 # Direct Mail via PostGrid
 
-Direct Mail via PostGrid is a Frappe app that enables you to send physical letters directly from your Frappe/ERPNext system using [PostGrid's Print & Mail API](https://www.postgrid.com/ref/avunu). With this app, you can mail the printed version of a submitted document, such as an invoice, purchase order, or customer statement, to any Frappe Address (optionally addressed to a Contact), such as those of customers, vendors, and employees. Furthermore, you can automate direct mail campaigns using the additional capabilities added to core Notifications.
+Direct mail for Frappe: send documents as physical letters via PostGrid
+
+Direct Mail via PostGrid is a Frappe app that mails the printed version of a Frappe or ERPNext document as a physical letter through [PostGrid's Print & Mail API](https://www.postgrid.com/ref/avunu). You can mail a submitted document, such as an invoice, purchase order or customer statement, to any Frappe Address (optionally addressed to a Contact), such as those of customers, suppliers and employees. You can also automate direct mail with the Mailed Letter channel it adds to Notifications.
 
 ## Features
 
-- Send physical letters directly from Frappe/ERPNext
-- Automate direct mail campaigns
+- Send physical letters from the print view of any submitted document
+- Mail documents automatically from Notifications
 - Choose a print format (and an optional cover letter) for each mailing
-- Track delivery status of each letter through PostGrid webhooks
-- View letter history and details in the document timeline, with an optional saved PDF copy
-- Seamless integration with PostGrid's direct mail service
+- Track the delivery status of each letter through PostGrid webhooks
+- See each letter in the document timeline, with an optional saved PDF copy
 
 ## Demo
 
@@ -22,7 +23,7 @@ You can also automate your mailings on doctype events using Notifications:
 ## Installation
 
 ```
-bench get-app avunu/postgrid_direct_mail
+bench get-app https://github.com/Avunu/postgrid_direct_mail --branch develop
 bench --site [site-name] install-app postgrid_direct_mail
 ```
 
@@ -38,7 +39,13 @@ bench --site [site-name] install-app postgrid_direct_mail
 
 - Only letters are supported. Postcards and cheques are not implemented yet.
 - A Mailed Letter notification mails on the New, Save, Submit, Cancel, Days Before and Days After events, and on a Method event for `after_insert`, `on_update`, `on_submit` or `on_cancel`. The Value Change, Minutes Before and Minutes After events don't mail.
+- A notification's To Contact Field has no effect yet: the letter is addressed without the contact's name. Letters sent from the print view do include the contact.
+- When a document has no company address, the Mail dialog's From Address stays empty and has to be picked by hand, even with ERPNext installed.
+
+## Development
+
+The commands, the source layout and the rename shim are described in [Development](development.md).
 
 ## License
 
-MIT. See [license.txt](license.txt).
+[MIT](https://github.com/Avunu/postgrid_direct_mail/blob/develop/license.txt), Copyright (c) 2024–present Avunu LLC.
