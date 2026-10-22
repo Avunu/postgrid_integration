@@ -93,7 +93,6 @@ To mail documents automatically, create a **Notification**, set its **Channel** 
 - Only letters are supported. Postcards and cheques are not implemented, although the webhook is registered for their events.
 - The **Mail** button appears only on submitted (or cancelled) documents, so DocTypes that cannot be submitted can only be mailed by a Notification.
 - A Mailed Letter notification mails on the New, Save, Submit, Cancel, Days Before and Days After events, and on a Method event for `after_insert`, `on_update`, `on_submit` or `on_cancel`. The Value Change, Minutes Before and Minutes After events don't mail.
-- A notification's **To Contact Field** has no effect yet: the letter is addressed to the address alone, without the contact's name. Letters sent from the print view do include the contact.
 - When a document has no `company_address`, the **From Address** in the Mail dialog stays empty and has to be picked by hand. With ERPNext installed, the dialog looks up the company's default address, but the answer arrives after the dialog is built and is not filled in.
 - Delivery updates need the site to be reachable by PostGrid over the internet.
 

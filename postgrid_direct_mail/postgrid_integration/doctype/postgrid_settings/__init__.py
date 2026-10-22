@@ -164,10 +164,11 @@ def mail_letter(
 	from_address_doc = frappe.get_doc("Address", from_address)
 	from_country = frappe.get_doc("Country", from_address_doc.get("country"))
 	to_address_doc = frappe.get_doc("Address", to_address)
-	# The contact comes from the print view's dialog, in pg_parameters
+	# A notification passes the contact as to_contact; the print view's dialog also has it in pg_parameters
+	to_contact = to_contact or params.get("to_contact")
 	to_contact_doc: Any = {}
-	if params.get("to_contact"):
-		to_contact_doc = frappe.get_doc("Contact", params["to_contact"])
+	if to_contact:
+		to_contact_doc = frappe.get_doc("Contact", to_contact)
 	to_country_code = frappe.get_value("Country", to_address_doc.get("country"), "code")
 	pdf_file = io.BytesIO(
 		frappe.get_print(
