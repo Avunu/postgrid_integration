@@ -87,27 +87,102 @@ class TestPostGridSettings(IntegrationTestCase):
 		create_again.assert_not_called()
 
 	def test_reset_webhooks(self):
-		set_settings(webhooks_secret=SECRET)
+		set_settings(webhooks_secret=SECRET, mode="Live", webhook_id_test="webhook_old_test")
 		ids = iter(["webhook_test", "webhook_live"])
-		keys = []
+		calls = []
 
 		def create(**kwargs):
-			keys.append(postgrid.pm_key)
+			calls.append(("create", postgrid.pm_key))
 			return SimpleNamespace(id=next(ids))
 
+		def delete(webhook_id):
+			calls.append(("delete", postgrid.pm_key, webhook_id))
+
 		doc = json.dumps({"doctype": "PostGrid Settings"})
-		with patch.object(postgrid.Webhook, "create", side_effect=create):
-			self.assertEqual(reset_webhooks(doc), doc)
-		self.assertEqual(keys, ["test_sk_key", "live_sk_key"])
+		with (
+			patch.object(postgrid.Webhook, "create", side_effect=create),
+			patch.object(postgrid.Webhook, "delete", side_effect=delete),
+		):
+			result = reset_webhooks(doc)
+
+		# The old Test webhook is deleted before its replacement is made; Live had none to delete
+		self.assertEqual(
+			calls,
+			[
+				("delete", "test_sk_key", "webhook_old_test"),
+				("create", "test_sk_key"),
+				("create", "live_sk_key"),
+			],
+		)
+		# The new ids are stored, the mode is left alone, and the form gets them back
+		settings = get_settings()
+		self.assertEqual(
+			(settings.webhook_id_test, settings.webhook_id_live), ("webhook_test", "webhook_live")
+		)
+		self.assertEqual(settings.mode, "Live")
+		self.assertEqual(
+			(result["webhook_id_test"], result["webhook_id_live"]), ("webhook_test", "webhook_live")
+		)
+		self.assertEqual(result["mode"], "Live")
+
+	def test_reset_webhooks_when_the_old_one_is_gone(self):
+		set_settings(webhooks_secret=SECRET, webhook_id_test="webhook_gone", webhook_id_live="webhook_gone")
+		not_found = postgrid.PMError(status_code=404, object="error", type="not_found", message="Not found")
+		ids = iter(["webhook_test", "webhook_live"])
+		with (
+			patch.object(
+				postgrid.Webhook, "create", side_effect=lambda **kwargs: SimpleNamespace(id=next(ids))
+			),
+			patch.object(postgrid.Webhook, "delete", side_effect=not_found),
+		):
+			reset_webhooks(json.dumps({"doctype": "PostGrid Settings"}))
+		settings = get_settings()
+		self.assertEqual(
+			(settings.webhook_id_test, settings.webhook_id_live), ("webhook_test", "webhook_live")
+		)
+
+	def test_reset_webhooks_stops_when_delete_fails(self):
+		set_settings(webhooks_secret=SECRET, webhook_id_test="webhook_old_test")
+		error = postgrid.PMError(status_code=401, object="error", type="unauthorized", message="Bad key")
+		with (
+			patch.object(postgrid.Webhook, "create") as create,
+			patch.object(postgrid.Webhook, "delete", side_effect=error),
+			self.assertRaises(postgrid.PMError),
+		):
+			reset_webhooks(json.dumps({"doctype": "PostGrid Settings"}))
+		create.assert_not_called()
+		self.assertEqual(get_settings().webhook_id_test, "webhook_old_test")
+
+	def test_reset_webhooks_needs_both_keys(self):
+		# With only a Test key, nothing is deleted or created on the Test account before the Live key fails
+		from frappe.utils.password import remove_encrypted_password
+
+		remove_encrypted_password("PostGrid Settings", "PostGrid Settings", "pm_key_live")
+		frappe.db.set_single_value("PostGrid Settings", "pm_key_live", None)
+		set_settings(webhooks_secret=SECRET, webhook_id_test="webhook_old_test")
+		with (
+			patch.object(postgrid.Webhook, "create") as create,
+			patch.object(postgrid.Webhook, "delete") as delete,
+			self.assertRaises(frappe.ValidationError),
+		):
+			reset_webhooks(json.dumps({"doctype": "PostGrid Settings"}))
+		delete.assert_not_called()
+		create.assert_not_called()
+		self.assertEqual(get_settings().webhook_id_test, "webhook_old_test")
 
 	def test_reset_webhooks_needs_write_permission(self):
 		set_settings(webhooks_secret=SECRET)
 		doc = json.dumps({"doctype": "PostGrid Settings"})
 		self.addCleanup(frappe.set_user, frappe.session.user)
 		frappe.set_user("Guest")
-		with patch.object(postgrid.Webhook, "create") as create, self.assertRaises(frappe.PermissionError):
+		with (
+			patch.object(postgrid.Webhook, "create") as create,
+			patch.object(postgrid.Webhook, "delete") as delete,
+			self.assertRaises(frappe.PermissionError),
+		):
 			reset_webhooks(doc)
 		create.assert_not_called()
+		delete.assert_not_called()
 
 	def test_get_postgrid_defaults(self):
 		set_settings(
@@ -188,6 +263,23 @@ class TestWebhooks(IntegrationTestCase):
 		self.assertEqual(self.post({"data": {"id": "letter_status", "status": "printing"}}), 200)
 		self.assertEqual(frappe.db.get_value("Integration Request", ig, "status"), "Authorized")
 		self.assertEqual(frappe.db.get_value("Communication", com, "delivery_status"), "Sending")
+
+	def test_ignores_unknown_status(self):
+		# Return envelope orders have their own statuses, which aren't in STATUS_MAP
+		set_settings(update_addresses=1)
+		ig, com = self.make_records("return_envelope_order_x")
+		address = make_address("Unchanged", postgrid_id="contact_unchanged")
+		payload = {
+			"data": {
+				"id": "return_envelope_order_x",
+				"status": "placed",
+				"to": {"id": "contact_unchanged", "addressStatus": "verified", "city": "Elsewhere"},
+			}
+		}
+		self.assertEqual(self.post(payload), 200)
+		self.assertEqual(frappe.db.get_value("Integration Request", ig, "status"), "Queued")
+		self.assertEqual(frappe.db.get_value("Communication", com, "delivery_status"), "Scheduled")
+		self.assertEqual(frappe.db.get_value("Address", address, "city"), "Lancaster")
 
 	def test_saves_pdf_once(self):
 		set_settings(save_pdf_files=1)
@@ -344,6 +436,13 @@ class TestMailLetter(IntegrationTestCase):
 		# cover letter, the blank back of a double-sided cover, then the document
 		self.assertEqual(count_pages(request["pdf"]), 3)
 		self.assertEqual(self.get_print.call_count, 2)
+
+	def test_mails_to_the_contact_argument(self):
+		# A Mailed Letter notification passes its To Contact Field's value as to_contact, outside pg_parameters
+		with patch.object(postgrid.Letter, "create", return_value=make_letter("letter_contact")) as create:
+			self.mail(to_contact=self.contact, pg_parameters={"misc": {}})
+		to = create.call_args.kwargs["to"]
+		self.assertEqual((to["first_name"], to["last_name"]), ("Ada", "Lovelace"))
 
 	def test_failure_is_recorded(self):
 		error = postgrid.PMError(
