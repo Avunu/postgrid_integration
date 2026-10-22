@@ -82,7 +82,7 @@ To mail documents automatically, create a **Notification**, set its **Channel** 
 
 ## How It Works
 
-- The print page script (`page_js` for `print`) extends Frappe's print view with the **Mail** button and its dialog. The dialog's defaults come from the document's `company_address` (the sender), its `customer_address`, `shipping_address`, `billing_address`, `supplier_address` or `address` (the recipient, first one set), and its `contact_person`.
+- The print page script (`page_js` for `print`) extends Frappe's print view with the **Mail** button and its dialog. The dialog's defaults come from the document's `company_address` (the sender; with ERPNext installed and no `company_address`, the company's default address), its `customer_address`, `shipping_address`, `billing_address`, `supplier_address` or `address` (the recipient, first one set), and its `contact_person`.
 - `mail_letter` renders the print format, and the cover letter when there is one, to PDF, merges them with pypdf and sends the letter with PostGrid's Python client (`postgrid-python` 1.x). It records the request and PostGrid's response in an **Integration Request**, and on success adds a **Communication** of type **Mailed Letter** to the document, which the timeline shows through `additional_timeline_content`.
 - PostGrid posts status changes to a guest endpoint as a JWT signed with the webhook secret. The app verifies it before reading anything, then updates the Integration Request and the Communication's delivery status. An event whose status is not a letter status (`ready`, `printing`, `processed_for_delivery`, `completed` or `cancelled`), such as a return envelope order's, is acknowledged and ignored.
 - Mailed Letter notifications extend Frappe's own Notification controller (`extend_doctype_class`), so they run on Frappe's normal notification events and daily job; other channels are left to Frappe.
@@ -93,7 +93,7 @@ To mail documents automatically, create a **Notification**, set its **Channel** 
 - Only letters are supported. Postcards and cheques are not implemented, although the webhook is registered for their events.
 - The **Mail** button appears only on submitted (or cancelled) documents, so DocTypes that cannot be submitted can only be mailed by a Notification.
 - A Mailed Letter notification mails on the New, Save, Submit, Cancel, Days Before and Days After events, and on a Method event for `after_insert`, `on_update`, `on_submit` or `on_cancel`. The Value Change, Minutes Before and Minutes After events don't mail.
-- When a document has no `company_address`, the **From Address** in the Mail dialog stays empty and has to be picked by hand. With ERPNext installed, the dialog looks up the company's default address, but the answer arrives after the dialog is built and is not filled in.
+- Without ERPNext, when a document has no `company_address`, the **From Address** in the Mail dialog starts empty and has to be picked by hand.
 - Delivery updates need the site to be reachable by PostGrid over the internet.
 
 <!-- frappe-nix:begin support -->
