@@ -40,7 +40,7 @@ bench --site [site-name] install-app postgrid_direct_mail
 - Only letters are supported. Postcards and cheques are not implemented yet.
 - A Mailed Letter notification mails on the New, Save, Submit, Cancel, Days Before and Days After events, and on a Method event for `after_insert`, `on_update`, `on_submit` or `on_cancel`. The Value Change, Minutes Before and Minutes After events don't mail.
 - A notification's To Contact Field has no effect yet: the letter is addressed without the contact's name. Letters sent from the print view do include the contact.
-- When a document has no company address, the Mail dialog's From Address stays empty and has to be picked by hand, even with ERPNext installed.
+- Without ERPNext, when a document has no company address, the Mail dialog's From Address starts empty and has to be picked by hand.
 
 ## Development
 

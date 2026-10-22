@@ -80,7 +80,7 @@ if (BasePrintView) {
 			const postgrid_defaults = this.postgrid_defaults;
 			/** @param {unknown} value */
 			const as_name = (value) => (typeof value === "string" && value ? value : null);
-			let default_from_address = as_name(doc["company_address"]);
+			const default_from_address = as_name(doc["company_address"]);
 			const default_to_address =
 				as_name(doc["customer_address"]) ??
 				as_name(doc["shipping_address"]) ??
@@ -88,24 +88,6 @@ if (BasePrintView) {
 				as_name(doc["supplier_address"]) ??
 				as_name(doc["address"]);
 			const default_to_contact = as_name(doc["contact_person"]);
-
-			// if from address is missing and ERPNext is installed, get the default company address
-			if (!default_from_address && this.erpnext_installed) {
-				const company =
-					as_name(doc["company"]) ??
-					as_name(frappe.defaults.get_user_default("Company")) ??
-					as_name(frappe.defaults.get_default("Company"));
-				if (company) {
-					void frappe.call({
-						method: "erpnext.setup.doctype.company.company.get_default_company_address",
-						args: { name: company },
-						debounce: 2000,
-						callback(r) {
-							default_from_address = as_name(r?.message) ?? "";
-						},
-					});
-				}
-			}
 
 			const misc = postgrid_defaults?.misc;
 			const d = new frappe.ui.Dialog({
@@ -223,6 +205,29 @@ if (BasePrintView) {
 				},
 			});
 			d.show();
+
+			// if from address is missing and ERPNext is installed, fill in the default company address.
+			// The answer arrives after the dialog is built, so it is set on the dialog, unless the user
+			// has picked an address by then.
+			if (!default_from_address && this.erpnext_installed) {
+				const company =
+					as_name(doc["company"]) ??
+					as_name(frappe.defaults.get_user_default("Company")) ??
+					as_name(frappe.defaults.get_default("Company"));
+				if (company) {
+					void frappe.call({
+						method: "erpnext.setup.doctype.company.company.get_default_company_address",
+						args: { name: company },
+						debounce: 2000,
+						callback(r) {
+							const address = as_name(r?.message);
+							if (address && !d.get_value("from_address")) {
+								void d.set_value("from_address", address);
+							}
+						},
+					});
+				}
+			}
 		}
 
 		/**
