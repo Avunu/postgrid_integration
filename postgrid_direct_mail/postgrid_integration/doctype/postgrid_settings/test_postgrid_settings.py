@@ -153,17 +153,90 @@ class TestPostGridSettings(IntegrationTestCase):
 		create.assert_not_called()
 		self.assertEqual(get_settings().webhook_id_test, "webhook_old_test")
 
-	def test_reset_webhooks_needs_both_keys(self):
-		# With only a Test key, nothing is deleted or created on the Test account before the Live key fails
+	def remove_key(self, mode: str):
 		from frappe.utils.password import remove_encrypted_password
 
-		remove_encrypted_password("PostGrid Settings", "PostGrid Settings", "pm_key_live")
-		frappe.db.set_single_value("PostGrid Settings", "pm_key_live", None)
+		remove_encrypted_password("PostGrid Settings", "PostGrid Settings", f"pm_key_{mode}")
+		frappe.db.set_single_value("PostGrid Settings", f"pm_key_{mode}", None)
+
+	def last_message(self) -> str:
+		return frappe.message_log[-1]["message"] if frappe.message_log else ""
+
+	def test_reset_webhooks_skips_a_mode_without_a_key(self):
+		# With only a Test key, Test is reset and nothing is deleted or created for Live
+		self.remove_key("live")
+		set_settings(
+			webhooks_secret=SECRET, webhook_id_test="webhook_old_test", webhook_id_live="webhook_old_live"
+		)
+		calls = []
+
+		def create(**kwargs):
+			calls.append(("create", postgrid.pm_key))
+			return SimpleNamespace(id="webhook_test")
+
+		def delete(webhook_id):
+			calls.append(("delete", postgrid.pm_key, webhook_id))
+
+		frappe.message_log = []
+		with (
+			patch.object(postgrid.Webhook, "create", side_effect=create),
+			patch.object(postgrid.Webhook, "delete", side_effect=delete),
+		):
+			result = reset_webhooks(json.dumps({"doctype": "PostGrid Settings"}))
+
+		self.assertEqual(calls, [("delete", "test_sk_key", "webhook_old_test"), ("create", "test_sk_key")])
+		settings = get_settings()
+		self.assertEqual(
+			(settings.webhook_id_test, settings.webhook_id_live), ("webhook_test", "webhook_old_live")
+		)
+		self.assertEqual(result["webhook_id_live"], "webhook_old_live")
+		self.assertEqual(settings.mode, "Test")
+		message = self.last_message()
+		self.assertIn("Reset the Test webhook.", message)
+		self.assertIn("Skipped Live: it has no API key.", message)
+
+	def test_reset_webhooks_with_only_a_live_key(self):
+		self.remove_key("test")
+		set_settings(webhooks_secret=SECRET, webhook_id_test="webhook_old_test")
+		frappe.message_log = []
+		with (
+			patch.object(
+				postgrid.Webhook, "create", return_value=SimpleNamespace(id="webhook_live")
+			) as create,
+			patch.object(postgrid.Webhook, "delete") as delete,
+		):
+			reset_webhooks(json.dumps({"doctype": "PostGrid Settings"}))
+		delete.assert_not_called()
+		create.assert_called_once()
+		settings = get_settings()
+		self.assertEqual(
+			(settings.webhook_id_test, settings.webhook_id_live), ("webhook_old_test", "webhook_live")
+		)
+		message = self.last_message()
+		self.assertIn("Reset the Live webhook.", message)
+		self.assertIn("Skipped Test: it has no API key.", message)
+
+	def test_reset_webhooks_reports_both_modes(self):
+		set_settings(webhooks_secret=SECRET)
+		ids = iter(["webhook_test", "webhook_live"])
+		frappe.message_log = []
+		with patch.object(
+			postgrid.Webhook, "create", side_effect=lambda **kwargs: SimpleNamespace(id=next(ids))
+		):
+			reset_webhooks(json.dumps({"doctype": "PostGrid Settings"}))
+		message = self.last_message()
+		self.assertIn("Reset the Test and Live webhooks.", message)
+		self.assertNotIn("Skipped", message)
+
+	def test_reset_webhooks_needs_a_key(self):
+		# With neither key, nothing is deleted or created and the user is told why
+		self.remove_key("test")
+		self.remove_key("live")
 		set_settings(webhooks_secret=SECRET, webhook_id_test="webhook_old_test")
 		with (
 			patch.object(postgrid.Webhook, "create") as create,
 			patch.object(postgrid.Webhook, "delete") as delete,
-			self.assertRaises(frappe.ValidationError),
+			self.assertRaisesRegex(frappe.ValidationError, "needs an API key"),
 		):
 			reset_webhooks(json.dumps({"doctype": "PostGrid Settings"}))
 		delete.assert_not_called()
