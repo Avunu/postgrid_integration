@@ -325,6 +325,30 @@ class TestPostGridSettings(IntegrationTestCase):
 		self.assertIn("Reset the Live webhook.", message)
 		self.assertIn("Could not register a new Test webhook: Connection reset.", message)
 
+	def test_reset_webhooks_without_an_old_id_when_create_fails(self):
+		# With no stored id nothing is deleted, so a failed create changes nothing: it must not claim an
+		# old webhook was deleted, must not commit, and with every mode failing it raises
+		set_settings(webhooks_secret=SECRET)
+		bad_key = postgrid.PMError(
+			status_code=401, object="error", type="unauthorized", message="Invalid API key"
+		)
+		calls = self.record_calls({"test_sk_key": bad_key, "live_sk_key": bad_key})
+		with self.assertRaises(frappe.ValidationError) as raised:
+			reset_webhooks(json.dumps({"doctype": "PostGrid Settings"}))
+
+		self.assertEqual(calls, [("create", "test_sk_key"), ("create", "live_sk_key")])
+		message = str(raised.exception)
+		self.assertIn(
+			"Could not register a Test webhook: Invalid API key. Its webhook was not changed.", message
+		)
+		self.assertIn(
+			"Could not register a Live webhook: Invalid API key. Its webhook was not changed.", message
+		)
+		self.assertNotIn("deleted", message)
+		settings = get_settings()
+		self.assertFalse(settings.webhook_id_test)
+		self.assertFalse(settings.webhook_id_live)
+
 	def test_reset_webhooks_commits_each_mode(self):
 		# Both succeed: each mode's new id is committed as soon as it is made
 		set_settings(

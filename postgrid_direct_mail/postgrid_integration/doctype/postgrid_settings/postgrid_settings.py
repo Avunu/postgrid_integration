@@ -150,6 +150,14 @@ def reset_webhooks(doc: str | dict[str, Any]) -> dict[str, Any]:
 		try:
 			pgs.create_webhook()
 		except Exception as e:
+			if not pgs.get(fieldname):
+				# There was no old webhook, so nothing changed at PostGrid or in the settings
+				failures.append(
+					_("Could not register a {0} webhook: {1}. Its webhook was not changed.").format(
+						_(webhook_mode), describe_error(e)
+					)
+				)
+				continue
 			# The old webhook is gone at PostGrid, so stop recording its id
 			pgs.set(fieldname, None)
 			failures.append(
