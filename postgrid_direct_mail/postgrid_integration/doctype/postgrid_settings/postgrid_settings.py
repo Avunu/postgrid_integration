@@ -102,20 +102,21 @@ def describe_error(error: Exception) -> str:
 	return frappe.utils.escape_html(str(getattr(error, "message", None) or error) or type(error).__name__)
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def reset_webhooks(doc: str | dict[str, Any]) -> dict[str, Any]:
 	"""Replace the webhook on the Test and the Live account (the settings form's Reset Webhooks action).
 
 	A mode without an API key is skipped: nothing is deleted or created on its account and its webhook
 	id is left as it is. With neither key set, nothing happens and the user is told to add one.
 
-	Each mode is reset on its own, and its outcome is committed as soon as it is known, so a failure in
-	one mode (an invalid key, a PostGrid error) never undoes what the other mode did at PostGrid. A
-	stored id always matches PostGrid: it is the new webhook's id when the reset worked, the old id when
-	the old webhook could not be deleted, and empty when the old one was deleted but no new one could
-	be registered. The report names each mode reset, skipped or failed, with the reason. When a mode
-	failed and no stored id changed, it raises; otherwise it shows the report as an error and returns
-	the settings, so the form shows the ids that are stored.
+	Each mode is reset on its own: a failure in one mode (an invalid key, a PostGrid error) is caught,
+	logged and reported, and never stops or undoes the other. Every outcome is stored on the settings
+	and the call returns normally, so the request's own commit keeps it; it never commits by itself.
+	POST only, since frappe rolls back a GET request's writes. A stored id always matches PostGrid: it
+	is the new webhook's id when the reset worked, the old id when the old webhook could not be
+	deleted, and empty when the old one was deleted but no new one could be registered. The report
+	names each mode reset, skipped or failed, with the reason, and is shown as an error when a mode
+	failed. It returns the settings, so the form shows the ids that are stored.
 	"""
 	pgs = frappe.get_single("PostGrid Settings")
 	# Whitelisted: only users who may edit the settings may register webhooks with their API keys
@@ -131,7 +132,6 @@ def reset_webhooks(doc: str | dict[str, Any]) -> dict[str, Any]:
 	mode = pgs.mode
 	reset: list[str] = []
 	failures: list[str] = []
-	changed = False
 	for webhook_mode in modes:
 		pgs.mode = webhook_mode
 		fieldname = f"webhook_id_{webhook_mode.lower()}"
@@ -141,6 +141,7 @@ def reset_webhooks(doc: str | dict[str, Any]) -> dict[str, Any]:
 			pgs.delete_webhook()
 		except Exception as e:
 			# Nothing changed at PostGrid for this mode, so its stored id stays as it is
+			frappe.log_error(f"PostGrid: could not reset the {webhook_mode} webhook")
 			failures.append(
 				_("Could not reset the {0} webhook: {1}. Its webhook was not changed.").format(
 					_(webhook_mode), describe_error(e)
@@ -150,6 +151,7 @@ def reset_webhooks(doc: str | dict[str, Any]) -> dict[str, Any]:
 		try:
 			pgs.create_webhook()
 		except Exception as e:
+			frappe.log_error(f"PostGrid: could not register a {webhook_mode} webhook")
 			if not pgs.get(fieldname):
 				# There was no old webhook, so nothing changed at PostGrid or in the settings
 				failures.append(
@@ -168,10 +170,8 @@ def reset_webhooks(doc: str | dict[str, Any]) -> dict[str, Any]:
 			)
 		else:
 			reset.append(webhook_mode)
+		# Store this mode's outcome now; the request commits it, as nothing below raises
 		pgs.db_set(fieldname, pgs.get(fieldname))
-		# Keep this mode's outcome even if a later mode fails and the request is rolled back
-		frappe.db.commit()
-		changed = True
 	pgs.mode = mode
 
 	messages = []
@@ -184,8 +184,6 @@ def reset_webhooks(doc: str | dict[str, Any]) -> dict[str, Any]:
 		_("Skipped {0}: it has no API key.").format(_(m)) for m in ("Test", "Live") if m not in modes
 	)
 	message = "<br>".join(messages)
-	if failures and not changed:
-		frappe.throw(message, title=_("Webhooks Not Reset"))
 	if failures:
 		frappe.msgprint(message, title=_("Webhooks Not Reset"), indicator="red")
 	else:
