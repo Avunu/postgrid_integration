@@ -13,6 +13,7 @@ from frappe.tests import IntegrationTestCase
 from postgrid_direct_mail.postgrid_integration.doctype import postgrid_settings as api
 from postgrid_direct_mail.postgrid_integration.doctype.postgrid_settings.postgrid_settings import (
 	PostGridSettings,
+	describe_error,
 	reset_webhooks,
 )
 from postgrid_direct_mail.tests.utils import (
@@ -47,6 +48,10 @@ class TestPostGridSettings(IntegrationTestCase):
 			webhook_id_live=None,
 		)
 		postgrid.pm_key = None
+		# Reset Webhooks commits after each mode; a real commit would end the test's savepoint
+		commit = patch.object(frappe.db, "commit")
+		self.commit = commit.start()
+		self.addCleanup(commit.stop)
 
 	def test_loading_needs_no_key(self):
 		# A new site has no mode and no keys; loading the settings must not reach for either
@@ -142,16 +147,217 @@ class TestPostGridSettings(IntegrationTestCase):
 		)
 
 	def test_reset_webhooks_stops_when_delete_fails(self):
-		set_settings(webhooks_secret=SECRET, webhook_id_test="webhook_old_test")
+		# With every mode failing before anything changed, it raises and keeps the stored ids
+		set_settings(
+			webhooks_secret=SECRET, webhook_id_test="webhook_old_test", webhook_id_live="webhook_old_live"
+		)
 		error = postgrid.PMError(status_code=401, object="error", type="unauthorized", message="Bad key")
 		with (
 			patch.object(postgrid.Webhook, "create") as create,
 			patch.object(postgrid.Webhook, "delete", side_effect=error),
-			self.assertRaises(postgrid.PMError),
+			self.assertRaisesRegex(frappe.ValidationError, "Could not reset the Test webhook: Bad key"),
 		):
 			reset_webhooks(json.dumps({"doctype": "PostGrid Settings"}))
 		create.assert_not_called()
-		self.assertEqual(get_settings().webhook_id_test, "webhook_old_test")
+		self.commit.assert_not_called()
+		settings = get_settings()
+		self.assertEqual(
+			(settings.webhook_id_test, settings.webhook_id_live), ("webhook_old_test", "webhook_old_live")
+		)
+
+	def record_calls(self, create_results: dict, delete_errors: dict | None = None) -> list:
+		"""Patch PostGrid's webhook calls and frappe's commit, and record them in order.
+
+		`create_results` maps an API key to the id `Webhook.create` returns, or to the error it raises;
+		`delete_errors` maps an API key to the error `Webhook.delete` raises.
+		"""
+		calls: list = []
+		delete_errors = delete_errors or {}
+
+		def create(**kwargs):
+			calls.append(("create", postgrid.pm_key))
+			result = create_results[postgrid.pm_key]
+			if isinstance(result, Exception):
+				raise result
+			return SimpleNamespace(id=result)
+
+		def delete(webhook_id):
+			calls.append(("delete", postgrid.pm_key, webhook_id))
+			if postgrid.pm_key in delete_errors:
+				raise delete_errors[postgrid.pm_key]
+
+		self.commit.side_effect = lambda: calls.append(("commit",))
+		for name, side_effect in (("create", create), ("delete", delete)):
+			patcher = patch.object(postgrid.Webhook, name, side_effect=side_effect)
+			patcher.start()
+			self.addCleanup(patcher.stop)
+		return calls
+
+	def last_indicator(self) -> str | None:
+		return frappe.local.message_log[-1].get("indicator") if frappe.local.message_log else None
+
+	def test_reset_webhooks_keeps_test_when_live_delete_fails(self):
+		# Test is replaced and committed before Live fails on an invalid key, so the new Test id is kept
+		set_settings(
+			webhooks_secret=SECRET, webhook_id_test="webhook_old_test", webhook_id_live="webhook_old_live"
+		)
+		bad_key = postgrid.PMError(
+			status_code=401, object="error", type="unauthorized", message="Invalid API key"
+		)
+		calls = self.record_calls({"test_sk_key": "webhook_test"}, {"live_sk_key": bad_key})
+		frappe.local.message_log = []
+		result = reset_webhooks(json.dumps({"doctype": "PostGrid Settings"}))
+
+		self.assertEqual(
+			calls,
+			[
+				("delete", "test_sk_key", "webhook_old_test"),
+				("create", "test_sk_key"),
+				("commit",),
+				("delete", "live_sk_key", "webhook_old_live"),
+			],
+		)
+		# Live's old webhook is still at PostGrid, so its id stays
+		settings = get_settings()
+		self.assertEqual(
+			(settings.webhook_id_test, settings.webhook_id_live), ("webhook_test", "webhook_old_live")
+		)
+		self.assertEqual(
+			(result["webhook_id_test"], result["webhook_id_live"]), ("webhook_test", "webhook_old_live")
+		)
+		self.assertEqual(settings.mode, "Test")
+		message = self.last_message()
+		self.assertIn("Reset the Test webhook.", message)
+		self.assertIn(
+			"Could not reset the Live webhook: Invalid API key. Its webhook was not changed.", message
+		)
+		self.assertEqual(self.last_indicator(), "red")
+
+	def test_reset_webhooks_keeps_test_when_live_create_fails(self):
+		# Live's old webhook is deleted and PostGrid then fails to make the new one: Live's id is cleared,
+		# since it names a webhook that no longer exists, and Test's new id is kept
+		set_settings(
+			webhooks_secret=SECRET, webhook_id_test="webhook_old_test", webhook_id_live="webhook_old_live"
+		)
+		server_error = postgrid.PMError(
+			status_code=500, object="error", type="api_error", message="PostGrid is down"
+		)
+		calls = self.record_calls({"test_sk_key": "webhook_test", "live_sk_key": server_error})
+		frappe.local.message_log = []
+		result = reset_webhooks(json.dumps({"doctype": "PostGrid Settings"}))
+
+		self.assertEqual(
+			calls,
+			[
+				("delete", "test_sk_key", "webhook_old_test"),
+				("create", "test_sk_key"),
+				("commit",),
+				("delete", "live_sk_key", "webhook_old_live"),
+				("create", "live_sk_key"),
+				("commit",),
+			],
+		)
+		settings = get_settings()
+		self.assertEqual(settings.webhook_id_test, "webhook_test")
+		self.assertFalse(settings.webhook_id_live)
+		self.assertEqual(result["webhook_id_test"], "webhook_test")
+		self.assertFalse(result["webhook_id_live"])
+		message = self.last_message()
+		self.assertIn("Reset the Test webhook.", message)
+		self.assertIn("Could not register a new Live webhook: PostGrid is down.", message)
+		self.assertEqual(self.last_indicator(), "red")
+
+	def test_reset_webhooks_resets_live_when_test_fails(self):
+		# A failure in Test does not stop Live, and Test's id stays as PostGrid has it
+		set_settings(
+			webhooks_secret=SECRET, webhook_id_test="webhook_old_test", webhook_id_live="webhook_old_live"
+		)
+		bad_key = postgrid.PMError(
+			status_code=401, object="error", type="unauthorized", message="Invalid API key"
+		)
+		calls = self.record_calls({"live_sk_key": "webhook_live"}, {"test_sk_key": bad_key})
+		frappe.local.message_log = []
+		result = reset_webhooks(json.dumps({"doctype": "PostGrid Settings"}))
+
+		self.assertEqual(
+			calls,
+			[
+				("delete", "test_sk_key", "webhook_old_test"),
+				("delete", "live_sk_key", "webhook_old_live"),
+				("create", "live_sk_key"),
+				("commit",),
+			],
+		)
+		settings = get_settings()
+		self.assertEqual(
+			(settings.webhook_id_test, settings.webhook_id_live), ("webhook_old_test", "webhook_live")
+		)
+		self.assertEqual(result["webhook_id_live"], "webhook_live")
+		message = self.last_message()
+		self.assertIn("Reset the Live webhook.", message)
+		self.assertIn("Could not reset the Test webhook: Invalid API key.", message)
+		self.assertEqual(self.last_indicator(), "red")
+
+	def test_reset_webhooks_clears_test_when_test_create_fails(self):
+		# Test's old webhook is deleted but no new one is made; a non-PostGrid error (a dropped connection)
+		# is reported the same way, and Live is still reset
+		set_settings(webhooks_secret=SECRET, webhook_id_test="webhook_old_test")
+		calls = self.record_calls(
+			{"test_sk_key": ConnectionError("Connection reset"), "live_sk_key": "webhook_live"}
+		)
+		frappe.local.message_log = []
+		reset_webhooks(json.dumps({"doctype": "PostGrid Settings"}))
+
+		self.assertEqual(
+			calls,
+			[
+				("delete", "test_sk_key", "webhook_old_test"),
+				("create", "test_sk_key"),
+				("commit",),
+				("create", "live_sk_key"),
+				("commit",),
+			],
+		)
+		settings = get_settings()
+		self.assertFalse(settings.webhook_id_test)
+		self.assertEqual(settings.webhook_id_live, "webhook_live")
+		message = self.last_message()
+		self.assertIn("Reset the Live webhook.", message)
+		self.assertIn("Could not register a new Test webhook: Connection reset.", message)
+
+	def test_reset_webhooks_commits_each_mode(self):
+		# Both succeed: each mode's new id is committed as soon as it is made
+		set_settings(
+			webhooks_secret=SECRET, webhook_id_test="webhook_old_test", webhook_id_live="webhook_old_live"
+		)
+		calls = self.record_calls({"test_sk_key": "webhook_test", "live_sk_key": "webhook_live"})
+		frappe.local.message_log = []
+		reset_webhooks(json.dumps({"doctype": "PostGrid Settings"}))
+
+		self.assertEqual(
+			calls,
+			[
+				("delete", "test_sk_key", "webhook_old_test"),
+				("create", "test_sk_key"),
+				("commit",),
+				("delete", "live_sk_key", "webhook_old_live"),
+				("create", "live_sk_key"),
+				("commit",),
+			],
+		)
+		settings = get_settings()
+		self.assertEqual(
+			(settings.webhook_id_test, settings.webhook_id_live), ("webhook_test", "webhook_live")
+		)
+		self.assertEqual(self.last_message(), "Reset the Test and Live webhooks.")
+		self.assertEqual(self.last_indicator(), "green")
+
+	def test_describe_error(self):
+		error = postgrid.PMError(status_code=401, object="error", type="unauthorized", message="Bad key")
+		self.assertEqual(describe_error(error), "Bad key")
+		self.assertEqual(describe_error(TimeoutError("timed out")), "timed out")
+		self.assertEqual(describe_error(TimeoutError()), "TimeoutError")
+		self.assertEqual(describe_error(ValueError("<b>bad</b>")), "&lt;b&gt;bad&lt;/b&gt;")
 
 	def remove_key(self, mode: str):
 		from frappe.utils.password import remove_encrypted_password
