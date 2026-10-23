@@ -34,7 +34,7 @@ bench --site [site-name] install-app postgrid_direct_mail
 3. Enter your PostGrid Test and Live API keys, and choose which Mode (Test or Live) is active.
 4. Set the default options (address placement, envelope type, double sided, color, express), and choose whether to save PDF copies and update addresses from PostGrid's verified results.
 5. Save the configuration. The first save in each mode registers a PostGrid webhook for that mode, so your site must be reachable from the internet for delivery status updates to arrive.
-6. To replace the webhooks later, for example after changing the site's URL, use **Reset Webhooks** in the settings form's actions. It resets the webhook of each mode that has an API key, skips a mode without one, and tells you which modes it reset.
+6. To replace the webhooks later, for example after changing the site's URL, use **Reset Webhooks** in the settings form's actions. It resets the webhook of each mode that has an API key, skips a mode without one, and tells you which modes it reset, skipped or could not reset, and why. Each mode is reset on its own, so if one mode fails (for example, an invalid Live key), the other mode's new webhook is still kept, and the failure is also recorded in the Error Log. If a mode's old webhook was deleted but no new one could be made, its webhook id is cleared; run **Reset Webhooks** again, or save the settings in that mode, once the problem is fixed.
 
 ## Current limitations
 

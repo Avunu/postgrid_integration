@@ -97,12 +97,26 @@ class PostGridSettings(Document):
 				raise
 
 
-@frappe.whitelist()
+def describe_error(error: Exception) -> str:
+	"""A short reason for a failed PostGrid call, escaped for the Reset Webhooks report's HTML."""
+	return frappe.utils.escape_html(str(getattr(error, "message", None) or error) or type(error).__name__)
+
+
+@frappe.whitelist(methods=["POST"])
 def reset_webhooks(doc: str | dict[str, Any]) -> dict[str, Any]:
 	"""Replace the webhook on the Test and the Live account (the settings form's Reset Webhooks action).
 
 	A mode without an API key is skipped: nothing is deleted or created on its account and its webhook
 	id is left as it is. With neither key set, nothing happens and the user is told to add one.
+
+	Each mode is reset on its own: a failure in one mode (an invalid key, a PostGrid error) is caught,
+	logged and reported, and never stops or undoes the other. Every outcome is stored on the settings
+	and the call returns normally, so the request's own commit keeps it; it never commits by itself.
+	POST only, since frappe rolls back a GET request's writes. A stored id always matches PostGrid: it
+	is the new webhook's id when the reset worked, the old id when the old webhook could not be
+	deleted, and empty when the old one was deleted but no new one could be registered. The report
+	names each mode reset, skipped or failed, with the reason, and is shown as an error when a mode
+	failed. It returns the settings, so the form shows the ids that are stored.
 	"""
 	pgs = frappe.get_single("PostGrid Settings")
 	# Whitelisted: only users who may edit the settings may register webhooks with their API keys
@@ -116,23 +130,63 @@ def reset_webhooks(doc: str | dict[str, Any]) -> dict[str, Any]:
 			title=_("No API Key"),
 		)
 	mode = pgs.mode
+	reset: list[str] = []
+	failures: list[str] = []
 	for webhook_mode in modes:
 		pgs.mode = webhook_mode
-		pgs.initialize_client()
-		# Delete the old webhook first, or PostGrid would send every event to both
-		pgs.delete_webhook()
-		pgs.create_webhook()
 		fieldname = f"webhook_id_{webhook_mode.lower()}"
+		try:
+			pgs.initialize_client()
+			# Delete the old webhook first, or PostGrid would send every event to both
+			pgs.delete_webhook()
+		except Exception as e:
+			# Nothing changed at PostGrid for this mode, so its stored id stays as it is
+			frappe.log_error(f"PostGrid: could not reset the {webhook_mode} webhook")
+			failures.append(
+				_("Could not reset the {0} webhook: {1}. Its webhook was not changed.").format(
+					_(webhook_mode), describe_error(e)
+				)
+			)
+			continue
+		try:
+			pgs.create_webhook()
+		except Exception as e:
+			frappe.log_error(f"PostGrid: could not register a {webhook_mode} webhook")
+			if not pgs.get(fieldname):
+				# There was no old webhook, so nothing changed at PostGrid or in the settings
+				failures.append(
+					_("Could not register a {0} webhook: {1}. Its webhook was not changed.").format(
+						_(webhook_mode), describe_error(e)
+					)
+				)
+				continue
+			# The old webhook is gone at PostGrid, so stop recording its id
+			pgs.set(fieldname, None)
+			failures.append(
+				_(
+					"Could not register a new {0} webhook: {1}. The old one was deleted, so {0} has no webhook"
+					" until Reset Webhooks succeeds or the settings are saved in {0} mode."
+				).format(_(webhook_mode), describe_error(e))
+			)
+		else:
+			reset.append(webhook_mode)
+		# Store this mode's outcome now; the request commits it, as nothing below raises
 		pgs.db_set(fieldname, pgs.get(fieldname))
 	pgs.mode = mode
-	skipped = [m for m in ("Test", "Live") if m not in modes]
-	message = (
-		_("Reset the {0} webhook.").format(_(modes[0]))
-		if len(modes) == 1
-		else _("Reset the Test and Live webhooks.")
+
+	messages = []
+	if len(reset) == 2:
+		messages.append(_("Reset the Test and Live webhooks."))
+	elif reset:
+		messages.append(_("Reset the {0} webhook.").format(_(reset[0])))
+	messages.extend(failures)
+	messages.extend(
+		_("Skipped {0}: it has no API key.").format(_(m)) for m in ("Test", "Live") if m not in modes
 	)
-	if skipped:
-		message += " " + _("Skipped {0}: it has no API key.").format(_(skipped[0]))
-	frappe.msgprint(message, title=_("Webhooks Reset"), indicator="green")
-	# The form applies the returned settings, so it shows the new webhook ids
+	message = "<br>".join(messages)
+	if failures:
+		frappe.msgprint(message, title=_("Webhooks Not Reset"), indicator="red")
+	else:
+		frappe.msgprint(message, title=_("Webhooks Reset"), indicator="green")
+	# The form applies the returned settings, so it shows the stored webhook ids
 	return pgs.as_dict()
