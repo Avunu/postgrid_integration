@@ -160,7 +160,7 @@ class TestPostGridSettings(IntegrationTestCase):
 		frappe.db.set_single_value("PostGrid Settings", f"pm_key_{mode}", None)
 
 	def last_message(self) -> str:
-		return frappe.message_log[-1]["message"] if frappe.message_log else ""
+		return frappe.local.message_log[-1]["message"] if frappe.local.message_log else ""
 
 	def test_reset_webhooks_skips_a_mode_without_a_key(self):
 		# With only a Test key, Test is reset and nothing is deleted or created for Live
@@ -177,7 +177,7 @@ class TestPostGridSettings(IntegrationTestCase):
 		def delete(webhook_id):
 			calls.append(("delete", postgrid.pm_key, webhook_id))
 
-		frappe.message_log = []
+		frappe.local.message_log = []
 		with (
 			patch.object(postgrid.Webhook, "create", side_effect=create),
 			patch.object(postgrid.Webhook, "delete", side_effect=delete),
@@ -198,7 +198,7 @@ class TestPostGridSettings(IntegrationTestCase):
 	def test_reset_webhooks_with_only_a_live_key(self):
 		self.remove_key("test")
 		set_settings(webhooks_secret=SECRET, webhook_id_test="webhook_old_test")
-		frappe.message_log = []
+		frappe.local.message_log = []
 		with (
 			patch.object(
 				postgrid.Webhook, "create", return_value=SimpleNamespace(id="webhook_live")
@@ -219,7 +219,7 @@ class TestPostGridSettings(IntegrationTestCase):
 	def test_reset_webhooks_reports_both_modes(self):
 		set_settings(webhooks_secret=SECRET)
 		ids = iter(["webhook_test", "webhook_live"])
-		frappe.message_log = []
+		frappe.local.message_log = []
 		with patch.object(
 			postgrid.Webhook, "create", side_effect=lambda **kwargs: SimpleNamespace(id=next(ids))
 		):
