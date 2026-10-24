@@ -1,6 +1,6 @@
 {
 	"name": "postgrid-direct-mail",
-	"version": "0.0.1",
+	"version": "16.0.0",
 	"private": true,
 	"description": "Direct mail for Frappe: send documents as physical letters via PostGrid",
 	"license": "MIT",
